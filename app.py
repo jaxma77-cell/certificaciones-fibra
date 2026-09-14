@@ -4,7 +4,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 import io
-import json  # <-- Nuevo: para guardar y cargar configuraciones
+import json
 
 st.set_page_config(page_title="Generador de Certificaciones", layout="wide")
 st.title("🛠️ Generador de Certificaciones de Fibra")
@@ -58,28 +58,80 @@ if 'proyectos' not in st.session_state:
 if 'pie_pagina' not in st.session_state:
     st.session_state.pie_pagina = "F'BERED INGENIERIA EN REDES DE FIBRA"
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL (MEJORADA CON EDICIÓN Y BORRADO) ---
 with st.sidebar:
     st.header("📁 Proyectos")
     nombres_proyectos = list(st.session_state.proyectos.keys())
+    
+    # Selector de proyecto activo
+    idx_actual = nombres_proyectos.index(st.session_state.proyecto_activo) if st.session_state.proyecto_activo in nombres_proyectos else 0
     proyecto_activo = st.selectbox(
         "Proyecto activo",
         nombres_proyectos,
-        index=nombres_proyectos.index(st.session_state.proyecto_activo)
+        index=idx_actual
     )
     st.session_state.proyecto_activo = proyecto_activo
     
-    if st.button("➕ Nuevo proyecto vacío", use_container_width=True):
+    st.markdown("---")
+    st.subheader("🔧 Gestionar proyecto")
+    
+    # Botón para CREAR nuevo proyecto
+    with st.expander("➕ Crear nuevo proyecto"):
         nombre_nuevo = st.text_input("Nombre del nuevo proyecto", "Nuevo Proyecto")
-        if nombre_nuevo and nombre_nuevo not in st.session_state.proyectos:
-            st.session_state.proyectos[nombre_nuevo] = {
-                "empresa": "Mi Empresa",
-                "fecha": "",
-                "conceptos": pd.DataFrame({"Concepto": [""], "Precio": [0.0]}),
-                "filas": []
-            }
-            st.session_state.proyecto_activo = nombre_nuevo
-            st.rerun()
+        if st.button("Crear proyecto", use_container_width=True):
+            if nombre_nuevo and nombre_nuevo not in st.session_state.proyectos:
+                st.session_state.proyectos[nombre_nuevo] = {
+                    "empresa": "Mi Empresa",
+                    "fecha": "",
+                    "conceptos": pd.DataFrame({"Concepto": [""], "Precio": [0.0]}),
+                    "filas": []
+                }
+                st.session_state.proyecto_activo = nombre_nuevo
+                st.rerun()
+            elif nombre_nuevo in st.session_state.proyectos:
+                st.error("Ya existe un proyecto con ese nombre")
+    
+    # Botón para RENOMBRAR proyecto
+    with st.expander("✏️ Renombrar proyecto"):
+        nuevo_nombre = st.text_input(
+            "Nuevo nombre", 
+            st.session_state.proyecto_activo,
+            key="input_renombrar"
+        )
+        if st.button("Aplicar nuevo nombre", use_container_width=True):
+            if nuevo_nombre and nuevo_nombre != st.session_state.proyecto_activo:
+                if nuevo_nombre not in st.session_state.proyectos:
+                    # Copiamos los datos al nuevo nombre
+                    st.session_state.proyectos[nuevo_nombre] = st.session_state.proyectos[st.session_state.proyecto_activo]
+                    # Borramos el antiguo
+                    del st.session_state.proyectos[st.session_state.proyecto_activo]
+                    st.session_state.proyecto_activo = nuevo_nombre
+                    st.success(f"✅ Proyecto renombrado a '{nuevo_nombre}'")
+                    st.rerun()
+                else:
+                    st.error("Ya existe un proyecto con ese nombre")
+            elif nuevo_nombre == st.session_state.proyecto_activo:
+                st.warning("El nombre es el mismo que el actual")
+    
+    # Botón para BORRAR proyecto
+    with st.expander("🗑️ Borrar proyecto"):
+        st.warning("⚠️ Esta acción no se puede deshacer. Se perderán todos los datos del proyecto.")
+        confirmacion = st.text_input(
+            f"Escribe '{st.session_state.proyecto_activo}' para confirmar",
+            key="input_borrar"
+        )
+        if st.button("BORRAR PROYECTO", use_container_width=True, type="primary"):
+            if confirmacion == st.session_state.proyecto_activo:
+                if len(st.session_state.proyectos) > 1:
+                    del st.session_state.proyectos[st.session_state.proyecto_activo]
+                    # Cambiamos al primer proyecto disponible
+                    st.session_state.proyecto_activo = list(st.session_state.proyectos.keys())[0]
+                    st.success("✅ Proyecto borrado correctamente")
+                    st.rerun()
+                else:
+                    st.error("No puedes borrar el único proyecto que tienes. Crea otro primero.")
+            else:
+                st.error("❌ El nombre no coincide. Borrado cancelado por seguridad.")
     
     st.markdown("---")
     st.header("⚙️ Configuración general")
@@ -94,7 +146,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "4. Importar Excel"
 ])
 
-# --- PESTAÑA 1: CONCEPTOS Y PRECIOS (CON GUARDADO) ---
+# --- PESTAÑA 1: CONCEPTOS Y PRECIOS ---
 with tab1:
     st.subheader(f"📋 Proyecto: {st.session_state.proyecto_activo}")
     
@@ -125,7 +177,6 @@ with tab1:
     col_save, col_load = st.columns(2)
     
     with col_save:
-        # Preparamos los datos para guardar
         config_data = {
             "proyecto": st.session_state.proyecto_activo,
             "empresa": p["empresa"],
