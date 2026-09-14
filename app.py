@@ -12,11 +12,15 @@ st.set_page_config(page_title="Generador de Certificaciones", layout="wide")
 st.title("🛠️ Generador de Certificaciones de Fibra")
 
 # --- CONFIGURACIÓN GITHUB PARA EL BOT ---
-GITHUB_TOKEN = ""  # ← IMPORTANTE: pon tu token aquí
+try:
+    GITHUB_TOKEN = st.secrets["GITHUB_TOKEN"]
+except KeyError:
+    GITHUB_TOKEN = ""  # Si no está en secrets, dejar vacío (para pruebas locales)
+    st.warning("⚠️ No se ha encontrado GITHUB_TOKEN en los Secrets de Streamlit. La importación desde Telegram no funcionará.")
+
 GITHUB_USUARIO = "jaxma77-cell"
 GITHUB_REPO = "certificaciones-fibra"
 GITHUB_ARCHIVO_BOT = "datos_bot.json"
-
 # --- PLANTILLAS DE PROYECTOS ---
 PLANTILLAS = {
     "FIBRAMOL JUNIO Y JULIO": {
