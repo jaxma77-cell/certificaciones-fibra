@@ -4,6 +4,7 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 import io
+import json  # <-- Nuevo: para guardar y cargar configuraciones
 
 st.set_page_config(page_title="Generador de Certificaciones", layout="wide")
 st.title("🛠️ Generador de Certificaciones de Fibra")
@@ -93,9 +94,10 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "4. Importar Excel"
 ])
 
-# --- PESTAÑA 1: CONCEPTOS ---
+# --- PESTAÑA 1: CONCEPTOS Y PRECIOS (CON GUARDADO) ---
 with tab1:
     st.subheader(f"📋 Proyecto: {st.session_state.proyecto_activo}")
+    
     col1, col2 = st.columns(2)
     with col1:
         p["empresa"] = st.text_input("Nombre de la empresa", p["empresa"])
@@ -104,6 +106,8 @@ with tab1:
     
     st.markdown("---")
     st.markdown("**Conceptos y precios unitarios**")
+    st.info("💡 Edita los precios directamente en la tabla. Para que no se pierdan al cerrar la app, **descarga la configuración** con el botón de abajo.")
+    
     edited = st.data_editor(
         p["conceptos"],
         num_rows="dynamic",
@@ -116,14 +120,49 @@ with tab1:
     )
     p["conceptos"] = edited.reset_index(drop=True)
 
-# --- PESTAÑA 2: REGISTRO (CORREGIDA) ---
+    st.markdown("---")
+    st.subheader("💾 Guardar y Cargar Precios")
+    col_save, col_load = st.columns(2)
+    
+    with col_save:
+        # Preparamos los datos para guardar
+        config_data = {
+            "proyecto": st.session_state.proyecto_activo,
+            "empresa": p["empresa"],
+            "fecha": p["fecha"],
+            "conceptos": p["conceptos"].to_dict(orient="records")
+        }
+        json_str = json.dumps(config_data, indent=2, ensure_ascii=False)
+        
+        st.download_button(
+            label="⬇️ Descargar Configuración de Precios",
+            data=json_str,
+            file_name=f"precios_{st.session_state.proyecto_activo.replace(' ', '_')}.json",
+            mime="application/json",
+            use_container_width=True,
+            help="Guarda este archivo en tu ordenador o móvil para no perder tus precios."
+        )
+        
+    with col_load:
+        uploaded_config = st.file_uploader("⬆️ Cargar Configuración de Precios (.json)", type=["json"])
+        if uploaded_config is not None:
+            try:
+                loaded_data = json.load(uploaded_config)
+                p["empresa"] = loaded_data.get("empresa", p["empresa"])
+                p["fecha"] = loaded_data.get("fecha", p["fecha"])
+                p["conceptos"] = pd.DataFrame(loaded_data.get("conceptos", []))
+                st.success("✅ ¡Precios y conceptos cargados correctamente!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error al leer el archivo: {e}")
+
+# --- PESTAÑA 2: REGISTRO ---
 with tab2:
     st.subheader(f"📝 Registro de trabajos - {st.session_state.proyecto_activo}")
     
     conceptos_list = p["conceptos"]['Concepto'].tolist()
     precios_list = p["conceptos"]['Precio'].tolist()
 
-    # Botones de acción (FUERA del formulario, para que funcionen siempre)
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("➕ Añadir fila", use_container_width=True):
@@ -146,7 +185,6 @@ with tab2:
     if not p["filas"]:
         st.warning("No hay filas. Pulsa **'➕ Añadir fila'** para empezar.")
     else:
-        # Construir DataFrame desde los datos guardados
         df_edit = pd.DataFrame(p["filas"])
         for c in conceptos_list:
             if c not in df_edit.columns:
@@ -160,7 +198,6 @@ with tab2:
         for c in conceptos_list:
             col_config[c] = st.column_config.NumberColumn(c, min_value=0, step=1, format="%d", width="small")
 
-        # 🔒 FORMULARIO: los cambios solo se guardan al pulsar "Guardar cambios"
         with st.form(key=f"form_datos_{st.session_state.proyecto_activo}"):
             df_editado = st.data_editor(
                 df_edit,
@@ -176,7 +213,6 @@ with tab2:
                 p["filas"] = df_editado.fillna(0).to_dict('records')
                 st.success("✅ Cambios guardados correctamente")
 
-    # Resumen (siempre visible)
     st.markdown("---")
     st.subheader("💰 Resumen")
     
@@ -328,7 +364,7 @@ with tab4:
             conceptos_imp = []
             precios_imp = []
             col = 3
-            while ws.cell(row=4, column=col).value and ws.cell(row=4, column=col).value != 'TOTAL':
+            while ws.cell(row=4, column=col).value and str(ws.cell(row=4, column=col).value).strip().upper() != 'TOTAL':
                 conceptos_imp.append(ws.cell(row=4, column=col).value)
                 precios_imp.append(float(ws.cell(row=5, column=col).value or 0))
                 col += 1
