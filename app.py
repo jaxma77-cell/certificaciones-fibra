@@ -23,7 +23,7 @@ PLANTILLAS = {
             'Empalme a fusión a partir de 64fo',
             'Medida de potencia de 1 fibra en 2a y 3a ventana'
         ],
-        "precios": [12.50, 25.00, 8.00, 3.00, 5.00, 2.50, 2.00]
+        "precios": [12.50, 25.00, 8.00, 5.00, 2.50, 2.00]
     },
     "Santomera Mayo 2024 (Fusionador)": {
         "empresa": "Fibranet Tecnologia y Sistemas SLU",
@@ -58,12 +58,11 @@ if 'proyectos' not in st.session_state:
 if 'pie_pagina' not in st.session_state:
     st.session_state.pie_pagina = "F'BERED INGENIERIA EN REDES DE FIBRA"
 
-# --- BARRA LATERAL (MEJORADA CON EDICIÓN Y BORRADO) ---
+# --- BARRA LATERAL ---
 with st.sidebar:
     st.header("📁 Proyectos")
     nombres_proyectos = list(st.session_state.proyectos.keys())
     
-    # Selector de proyecto activo
     idx_actual = nombres_proyectos.index(st.session_state.proyecto_activo) if st.session_state.proyecto_activo in nombres_proyectos else 0
     proyecto_activo = st.selectbox(
         "Proyecto activo",
@@ -75,7 +74,6 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("🔧 Gestionar proyecto")
     
-    # Botón para CREAR nuevo proyecto
     with st.expander("➕ Crear nuevo proyecto"):
         nombre_nuevo = st.text_input("Nombre del nuevo proyecto", "Nuevo Proyecto")
         if st.button("Crear proyecto", use_container_width=True):
@@ -91,7 +89,6 @@ with st.sidebar:
             elif nombre_nuevo in st.session_state.proyectos:
                 st.error("Ya existe un proyecto con ese nombre")
     
-    # Botón para RENOMBRAR proyecto
     with st.expander("✏️ Renombrar proyecto"):
         nuevo_nombre = st.text_input(
             "Nuevo nombre", 
@@ -101,9 +98,7 @@ with st.sidebar:
         if st.button("Aplicar nuevo nombre", use_container_width=True):
             if nuevo_nombre and nuevo_nombre != st.session_state.proyecto_activo:
                 if nuevo_nombre not in st.session_state.proyectos:
-                    # Copiamos los datos al nuevo nombre
                     st.session_state.proyectos[nuevo_nombre] = st.session_state.proyectos[st.session_state.proyecto_activo]
-                    # Borramos el antiguo
                     del st.session_state.proyectos[st.session_state.proyecto_activo]
                     st.session_state.proyecto_activo = nuevo_nombre
                     st.success(f"✅ Proyecto renombrado a '{nuevo_nombre}'")
@@ -113,7 +108,6 @@ with st.sidebar:
             elif nuevo_nombre == st.session_state.proyecto_activo:
                 st.warning("El nombre es el mismo que el actual")
     
-    # Botón para BORRAR proyecto
     with st.expander("🗑️ Borrar proyecto"):
         st.warning("⚠️ Esta acción no se puede deshacer. Se perderán todos los datos del proyecto.")
         confirmacion = st.text_input(
@@ -124,7 +118,6 @@ with st.sidebar:
             if confirmacion == st.session_state.proyecto_activo:
                 if len(st.session_state.proyectos) > 1:
                     del st.session_state.proyectos[st.session_state.proyecto_activo]
-                    # Cambiamos al primer proyecto disponible
                     st.session_state.proyecto_activo = list(st.session_state.proyectos.keys())[0]
                     st.success("✅ Proyecto borrado correctamente")
                     st.rerun()
@@ -207,7 +200,7 @@ with tab1:
             except Exception as e:
                 st.error(f"Error al leer el archivo: {e}")
 
-# --- PESTAÑA 2: REGISTRO ---
+# --- PESTAÑA 2: REGISTRO (con "Nombre" en lugar de "Ubicación") ---
 with tab2:
     st.subheader(f"📝 Registro de trabajos - {st.session_state.proyecto_activo}")
     
@@ -217,7 +210,7 @@ with tab2:
     col1, col2, col3 = st.columns(3)
     with col1:
         if st.button("➕ Añadir fila", use_container_width=True):
-            nueva = {'Dia': '', 'Ubicacion': ''}
+            nueva = {'Dia': '', 'Nombre': ''}
             for c in conceptos_list:
                 nueva[c] = 0
             p["filas"].append(nueva)
@@ -229,7 +222,7 @@ with tab2:
     with col3:
         if st.button("📋 Duplicar última fila", use_container_width=True) and p["filas"]:
             copia = p["filas"][-1].copy()
-            copia['Ubicacion'] = ''
+            copia['Nombre'] = ''
             p["filas"].append(copia)
             st.rerun()
 
@@ -240,11 +233,11 @@ with tab2:
         for c in conceptos_list:
             if c not in df_edit.columns:
                 df_edit[c] = 0
-        df_edit = df_edit[['Dia', 'Ubicacion'] + conceptos_list]
+        df_edit = df_edit[['Dia', 'Nombre'] + conceptos_list]
 
         col_config = {
             "Dia": st.column_config.TextColumn("DÍA", width="small"),
-            "Ubicacion": st.column_config.TextColumn("UBICACIÓN", width="medium"),
+            "Nombre": st.column_config.TextColumn("NOMBRE", width="medium"),
         }
         for c in conceptos_list:
             col_config[c] = st.column_config.NumberColumn(c, min_value=0, step=1, format="%d", width="small")
@@ -283,7 +276,7 @@ with tab2:
     if p["filas"]:
         df_resumen = pd.DataFrame({
             'DÍA': [f.get('Dia', '') for f in p["filas"]],
-            'UBICACIÓN': [f.get('Ubicacion', '') for f in p["filas"]],
+            'NOMBRE': [f.get('Nombre', '') for f in p["filas"]],
             'TOTAL (€)': [f"{t:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".") for t in totales_fila]
         })
         st.dataframe(df_resumen, use_container_width=True, hide_index=True)
@@ -330,7 +323,7 @@ with tab3:
             ws['A3'].alignment = center
 
             ws['A4'] = 'DÍA'
-            ws['B4'] = 'UBICACIÓN'
+            ws['B4'] = 'NOMBRE'   # <-- CAMBIO: antes ponía UBICACIÓN
             for i, c in enumerate(conceptos_list):
                 ws.cell(row=4, column=i+3, value=c)
             ws.cell(row=4, column=num_cols, value='TOTAL')
@@ -353,7 +346,7 @@ with tab3:
             start_row = 6
             for idx, fila in enumerate(p["filas"]):
                 ws.cell(row=start_row, column=1, value=fila.get('Dia', '')).border = thin
-                ws.cell(row=start_row, column=2, value=fila.get('Ubicacion', '')).border = thin
+                ws.cell(row=start_row, column=2, value=fila.get('Nombre', '')).border = thin  # <-- CAMBIO
                 for i, c in enumerate(conceptos_list):
                     val = fila.get(c, 0)
                     try:
@@ -422,7 +415,10 @@ with tab4:
             filas_imp = []
             row = 6
             while ws.cell(row=row, column=1).value or ws.cell(row=row, column=2).value:
-                fila = {'Dia': ws.cell(row=row, column=1).value or '', 'Ubicacion': ws.cell(row=row, column=2).value or ''}
+                fila = {
+                    'Dia': ws.cell(row=row, column=1).value or '',
+                    'Nombre': ws.cell(row=row, column=2).value or ''   # <-- CAMBIO: antes 'Ubicacion'
+                }
                 for i, c in enumerate(conceptos_imp):
                     val = ws.cell(row=row, column=i+3).value
                     fila[c] = int(float(val)) if val else 0
