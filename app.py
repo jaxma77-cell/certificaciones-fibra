@@ -5,11 +5,19 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.utils import get_column_letter
 import io
 import json
+import requests
+import base64
 
 st.set_page_config(page_title="Generador de Certificaciones", layout="wide")
 st.title("🛠️ Generador de Certificaciones de Fibra")
 
-# --- PLANTILLAS DE PROYECTOS (CORREGIDO) ---
+# --- CONFIGURACIÓN GITHUB PARA EL BOT ---
+GITHUB_TOKEN = "PON_AQUI_TU_TOKEN_DE_GITHUB"  # ← IMPORTANTE: pon tu token aquí
+GITHUB_USUARIO = "jaxma77-cell"
+GITHUB_REPO = "certificaciones-fibra"
+GITHUB_ARCHIVO_BOT = "datos_bot.json"
+
+# --- PLANTILLAS DE PROYECTOS ---
 PLANTILLAS = {
     "FIBRAMOL JUNIO Y JULIO": {
         "empresa": "Fibranet",
@@ -23,7 +31,7 @@ PLANTILLAS = {
             'Empalme a fusión a partir de 64fo',
             'Medida de potencia de 1 fibra en 2a y 3a ventana'
         ],
-        "precios": [12.50, 25.00, 8.00, 3.00, 5.00, 2.50, 2.00]  # ← AHORA SÍ SON 7
+        "precios": [12.50, 25.00, 8.00, 3.00, 5.00, 2.50, 2.00]
     },
     "Santomera Mayo 2024 (Fusionador)": {
         "empresa": "Fibranet Tecnologia y Sistemas SLU",
@@ -136,10 +144,10 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "1. Conceptos y Precios", 
     "2. Registro de Trabajos", 
     "3. Generar Excel",
-    "4. Importar Excel"
+    "4. Importar Datos"
 ])
 
-# --- PESTAÑA 1 ---
+# --- PESTAÑA 1: CONCEPTOS Y PRECIOS ---
 with tab1:
     st.subheader(f"📋 Proyecto: {st.session_state.proyecto_activo}")
     
@@ -200,7 +208,7 @@ with tab1:
             except Exception as e:
                 st.error(f"Error al leer el archivo: {e}")
 
-# --- PESTAÑA 2 ---
+# --- PESTAÑA 2: REGISTRO ---
 with tab2:
     st.subheader(f"📝 Registro de trabajos - {st.session_state.proyecto_activo}")
     
@@ -285,7 +293,7 @@ with tab2:
     p["totales"] = totales_fila
     p["total_general"] = total_general
 
-# --- PESTAÑA 3 ---
+# --- PESTAÑA 3: EXCEL ---
 with tab3:
     st.subheader("📊 Exportar a Excel con formato oficial")
 
@@ -393,47 +401,150 @@ with tab3:
             )
             st.success("✅ ¡Excel generado correctamente!")
 
-# --- PESTAÑA 4 ---
+# --- PESTAÑA 4: IMPORTAR DATOS (MEJORADA CON TELEGRAM) ---
 with tab4:
-    st.subheader("📥 Importar datos desde un Excel existente")
-    st.info("Sube un Excel generado previamente por esta app para seguir editándolo.")
-    archivo = st.file_uploader("Selecciona archivo .xlsx", type=["xlsx"])
-    if archivo:
-        try:
-            wb = openpyxl.load_workbook(archivo)
-            ws = wb.active
-            empresa_imp = ws['A1'].value or ""
-            proyecto_imp = ws['A2'].value or "Importado"
-            fecha_imp = ws['A3'].value or ""
-            conceptos_imp = []
-            precios_imp = []
-            col = 3
-            while ws.cell(row=4, column=col).value and str(ws.cell(row=4, column=col).value).strip().upper() != 'TOTAL':
-                conceptos_imp.append(ws.cell(row=4, column=col).value)
-                precios_imp.append(float(ws.cell(row=5, column=col).value or 0))
-                col += 1
-            filas_imp = []
-            row = 6
-            while ws.cell(row=row, column=1).value or ws.cell(row=row, column=2).value:
-                fila = {
-                    'Dia': ws.cell(row=row, column=1).value or '',
-                    'Nombre': ws.cell(row=row, column=2).value or ''
-                }
-                for i, c in enumerate(conceptos_imp):
-                    val = ws.cell(row=row, column=i+3).value
-                    fila[c] = int(float(val)) if val else 0
-                filas_imp.append(fila)
-                row += 1
-            st.success(f"✅ Leído: {len(filas_imp)} filas, {len(conceptos_imp)} conceptos")
-            if st.button("💾 Cargar en un nuevo proyecto", type="primary"):
-                nombre_nuevo = f"{proyecto_imp} (importado)"
-                st.session_state.proyectos[nombre_nuevo] = {
-                    "empresa": empresa_imp,
-                    "fecha": str(fecha_imp),
-                    "conceptos": pd.DataFrame({"Concepto": conceptos_imp, "Precio": precios_imp}),
-                    "filas": filas_imp
-                }
-                st.session_state.proyecto_activo = nombre_nuevo
-                st.rerun()
-        except Exception as e:
-            st.error(f"Error al leer el archivo: {e}")
+    st.subheader("📥 Importar datos")
+    
+    tab_telegram, tab_excel = st.tabs(["🤖 Desde Telegram", "📄 Desde Excel"])
+    
+    # --- IMPORTAR DESDE TELEGRAM ---
+    with tab_telegram:
+        st.info("Lee los datos guardados por el bot de Telegram en GitHub")
+        
+        if st.button("🔄 Leer datos del bot", type="primary", use_container_width=True):
+            try:
+                # Leer archivo desde GitHub
+                url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_BOT}"
+                headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+                r = requests.get(url, headers=headers)
+                
+                if r.status_code == 200:
+                    contenido = base64.b64decode(r.json()["content"]).decode("utf-8")
+                    datos_bot = json.loads(contenido)
+                    
+                    # Mostrar resumen
+                    st.success("✅ Datos leídos correctamente desde GitHub")
+                    
+                    if datos_bot:
+                        st.markdown("**Proyectos disponibles en el bot:**")
+                        for proyecto_nombre, datos_proyecto in datos_bot.items():
+                            num_filas = len(datos_proyecto.get("filas", []))
+                            total_proyecto = sum(f.get("total", 0) for f in datos_proyecto.get("filas", []))
+                            st.markdown(f"- **{proyecto_nombre}**: {num_filas} filas → {total_proyecto:.2f} €")
+                        
+                        # Guardar en session_state para usar después
+                        st.session_state.datos_bot = datos_bot
+                        st.rerun()
+                    else:
+                        st.warning("El archivo está vacío. Envía datos al bot primero.")
+                elif r.status_code == 404:
+                    st.warning("⚠️ El archivo `datos_bot.json` no existe todavía. Envía algún mensaje al bot primero.")
+                else:
+                    st.error(f"❌ Error al leer GitHub: {r.status_code}")
+            except Exception as e:
+                st.error(f"❌ Error: {e}")
+        
+        # Si hay datos cargados, mostrar opciones de importación
+        if 'datos_bot' in st.session_state and st.session_state.datos_bot:
+            st.markdown("---")
+            st.subheader("📥 Importar al proyecto activo")
+            
+            proyecto_seleccionado = st.selectbox(
+                "¿Qué proyecto del bot quieres importar?",
+                list(st.session_state.datos_bot.keys())
+            )
+            
+            datos_proyecto = st.session_state.datos_bot[proyecto_seleccionado]
+            filas_bot = datos_proyecto.get("filas", [])
+            
+            if filas_bot:
+                st.markdown(f"**{len(filas_bot)} filas disponibles para importar**")
+                
+                # Mostrar vista previa
+                df_vista = pd.DataFrame([
+                    {
+                        'Nombre': f['Nombre'],
+                        'Total (€)': f"{f['total']:.2f} €"
+                    }
+                    for f in filas_bot[:10]
+                ])
+                st.dataframe(df_vista, use_container_width=True, hide_index=True)
+                
+                if len(filas_bot) > 10:
+                    st.caption(f"... y {len(filas_bot) - 10} filas más")
+                
+                # Opciones de importación
+                modo_importacion = st.radio(
+                    "¿Cómo quieres importar los datos?",
+                    ["Añadir a las filas existentes", "Reemplazar todas las filas actuales"],
+                    horizontal=True
+                )
+                
+                if st.button("🚀 IMPORTAR DATOS", type="primary", use_container_width=True):
+                    conceptos_list = p["conceptos"]['Concepto'].tolist()
+                    
+                    # Convertir datos del bot al formato de la app
+                    filas_importadas = []
+                    for f in filas_bot:
+                        fila_nueva = {'Dia': '', 'Nombre': f['Nombre']}
+                        cantidades = f.get('cantidades', [])
+                        for i, c in enumerate(conceptos_list):
+                            if i < len(cantidades):
+                                fila_nueva[c] = cantidades[i]
+                            else:
+                                fila_nueva[c] = 0
+                        filas_importadas.append(fila_nueva)
+                    
+                    # Aplicar según el modo elegido
+                    if modo_importacion == "Añadir a las filas existentes":
+                        p["filas"].extend(filas_importadas)
+                    else:  # Reemplazar
+                        p["filas"] = filas_importadas
+                    
+                    st.success(f"✅ ¡{len(filas_importadas)} filas importadas correctamente!")
+                    st.balloons()
+                    st.rerun()
+    
+    # --- IMPORTAR DESDE EXCEL ---
+    with tab_excel:
+        st.info("Sube un Excel generado previamente por esta app para seguir editándolo.")
+        archivo = st.file_uploader("Selecciona archivo .xlsx", type=["xlsx"])
+        if archivo:
+            try:
+                wb = openpyxl.load_workbook(archivo)
+                ws = wb.active
+                empresa_imp = ws['A1'].value or ""
+                proyecto_imp = ws['A2'].value or "Importado"
+                fecha_imp = ws['A3'].value or ""
+                conceptos_imp = []
+                precios_imp = []
+                col = 3
+                while ws.cell(row=4, column=col).value and str(ws.cell(row=4, column=col).value).strip().upper() != 'TOTAL':
+                    conceptos_imp.append(ws.cell(row=4, column=col).value)
+                    precios_imp.append(float(ws.cell(row=5, column=col).value or 0))
+                    col += 1
+                filas_imp = []
+                row = 6
+                while ws.cell(row=row, column=1).value or ws.cell(row=row, column=2).value:
+                    fila = {
+                        'Dia': ws.cell(row=row, column=1).value or '',
+                        'Nombre': ws.cell(row=row, column=2).value or ''
+                    }
+                    for i, c in enumerate(conceptos_imp):
+                        val = ws.cell(row=row, column=i+3).value
+                        fila[c] = int(float(val)) if val else 0
+                    filas_imp.append(fila)
+                    row += 1
+                st.success(f"✅ Leído: {len(filas_imp)} filas, {len(conceptos_imp)} conceptos")
+                if st.button("💾 Cargar en un nuevo proyecto", type="primary"):
+                    nombre_nuevo = f"{proyecto_imp} (importado)"
+                    st.session_state.proyectos[nombre_nuevo] = {
+                        "empresa": empresa_imp,
+                        "fecha": str(fecha_imp),
+                        "conceptos": pd.DataFrame({"Concepto": conceptos_imp, "Precio": precios_imp}),
+                        "filas": filas_imp
+                    }
+                    st.session_state.proyecto_activo = nombre_nuevo
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Error al leer el archivo: {e}")
