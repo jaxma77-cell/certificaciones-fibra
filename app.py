@@ -19,7 +19,7 @@ except Exception:
     GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
 if not GITHUB_TOKEN:
-    st.warning("⚠️ No se ha encontrado GITHUB_TOKEN. La importación desde Telegram no funcionará hasta que lo configures en los Secrets.")
+    st.warning("⚠️ No se ha encontrado GITHUB_TOKEN. La importación desde Telegram no funcionará.")
 
 GITHUB_USUARIO = "jaxma77-cell"
 GITHUB_REPO = "certificaciones-fibra"
@@ -39,7 +39,7 @@ PLANTILLAS = {
             'Empalme a fusión a partir de 64fo',
             'Medida de potencia de 1 fibra en 2a y 3a ventana'
         ],
-        "precios": [12.50, 25.00, 8.00, 3.00, 5.00, 2.50, 2.00]  # 7 conceptos, 7 precios
+        "precios": [12.50, 25.00, 8.00, 3.00, 5.00, 2.50, 2.00]
     },
     "Santomera Mayo 2024 (Fusionador)": {
         "empresa": "Fibranet Tecnologia y Sistemas SLU",
@@ -52,7 +52,7 @@ PLANTILLAS = {
             'Empalme a Fusión hasta 24fo',
             'Medida de potencia de 1 fibra en 2a y 3a ventana'
         ],
-        "precios": [18.00, 36.00, 12.00, 3.10, 7.00, 2.50]  # 6 conceptos, 6 precios
+        "precios": [18.00, 36.00, 12.00, 3.10, 7.00, 2.50]
     }
 }
 
@@ -73,6 +73,30 @@ if 'proyectos' not in st.session_state:
 
 if 'pie_pagina' not in st.session_state:
     st.session_state.pie_pagina = "F'BERED INGENIERIA EN REDES DE FIBRA"
+
+# --- FUNCIÓN AUXILIAR: obtener conceptos válidos (no vacíos) ---
+def obtener_conceptos_validos(proyecto):
+    """Devuelve solo los conceptos que tienen nombre (no están vacíos)"""
+    df = proyecto["conceptos"]
+    # Filtrar filas donde Concepto no esté vacío ni sea NaN
+    validos = df[df['Concepto'].notna() & (df['Concepto'].astype(str).str.strip() != '')]
+    return validos.reset_index(drop=True)
+
+# --- FUNCIÓN AUXILIAR: adaptar filas existentes a nuevos conceptos ---
+def adaptar_filas_a_conceptos(filas, conceptos_validos):
+    """Adapta las filas existentes para que tengan las claves de los conceptos actuales"""
+    conceptos_list = conceptos_validos['Concepto'].tolist()
+    filas_adaptadas = []
+    for fila in filas:
+        nueva_fila = {
+            'Dia': fila.get('Dia', ''),
+            'Nombre': fila.get('Nombre', '')
+        }
+        for c in conceptos_list:
+            # Si la fila ya tenía ese concepto, lo mantiene; si no, pone 0
+            nueva_fila[c] = fila.get(c, 0)
+        filas_adaptadas.append(nueva_fila)
+    return filas_adaptadas
 
 # --- BARRA LATERAL ---
 with st.sidebar:
@@ -125,7 +149,7 @@ with st.sidebar:
                 st.warning("El nombre es el mismo que el actual")
     
     with st.expander("🗑️ Borrar proyecto"):
-        st.warning("⚠️ Esta acción no se puede deshacer. Se perderán todos los datos.")
+        st.warning("⚠️ Esta acción no se puede deshacer.")
         confirmacion = st.text_input(
             f"Escribe '{st.session_state.proyecto_activo}' para confirmar",
             key="input_borrar"
@@ -167,7 +191,7 @@ with tab1:
     
     st.markdown("---")
     st.markdown("**Conceptos y precios unitarios**")
-    st.info("💡 Edita los precios directamente. Para que no se pierdan, **descarga la configuración** con el botón de abajo.")
+    st.info("💡 Edita los conceptos y precios. **No dejes filas vacías** en medio (o bórralas). Cuando termines, pulsa **'Aplicar cambios'** para actualizar las filas de trabajo.")
     
     edited = st.data_editor(
         p["conceptos"],
@@ -180,17 +204,33 @@ with tab1:
         }
     )
     p["conceptos"] = edited.reset_index(drop=True)
+    
+    # Botón para aplicar cambios de conceptos a las filas existentes
+    st.markdown("---")
+    if st.button("🔄 Aplicar cambios de conceptos a las filas", use_container_width=True, type="secondary"):
+        conceptos_validos = obtener_conceptos_validos(p)
+        if len(conceptos_validos) == 0:
+            st.error("❌ No hay ningún concepto válido. Añade al menos uno con nombre.")
+        else:
+            p["filas"] = adaptar_filas_a_conceptos(p["filas"], conceptos_validos)
+            st.success(f"✅ Filas actualizadas con {len(conceptos_validos)} conceptos válidos")
+            st.rerun()
+    
+    # Mostrar cuántos conceptos válidos hay
+    conceptos_validos = obtener_conceptos_validos(p)
+    st.caption(f"📊 Conceptos válidos actualmente: **{len(conceptos_validos)}**")
 
     st.markdown("---")
     st.subheader("💾 Guardar y Cargar Precios")
     col_save, col_load = st.columns(2)
     
     with col_save:
+        # Solo guardamos los conceptos válidos
         config_data = {
             "proyecto": st.session_state.proyecto_activo,
             "empresa": p["empresa"],
             "fecha": p["fecha"],
-            "conceptos": p["conceptos"].to_dict(orient="records")
+            "conceptos": conceptos_validos.to_dict(orient="records")
         }
         json_str = json.dumps(config_data, indent=2, ensure_ascii=False)
         
@@ -199,8 +239,7 @@ with tab1:
             data=json_str,
             file_name=f"precios_{st.session_state.proyecto_activo.replace(' ', '_')}.json",
             mime="application/json",
-            use_container_width=True,
-            help="Guarda este archivo para no perder tus precios."
+            use_container_width=True
         )
         
     with col_load:
@@ -211,6 +250,7 @@ with tab1:
                 p["empresa"] = loaded_data.get("empresa", p["empresa"])
                 p["fecha"] = loaded_data.get("fecha", p["fecha"])
                 p["conceptos"] = pd.DataFrame(loaded_data.get("conceptos", []))
+                p["filas"] = []  # Limpiar filas al cargar conceptos nuevos
                 st.success("✅ ¡Precios y conceptos cargados correctamente!")
                 st.rerun()
             except Exception as e:
@@ -220,101 +260,111 @@ with tab1:
 with tab2:
     st.subheader(f"📝 Registro de trabajos - {st.session_state.proyecto_activo}")
     
-    conceptos_list = p["conceptos"]['Concepto'].tolist()
-    precios_list = p["conceptos"]['Precio'].tolist()
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        if st.button("➕ Añadir fila", use_container_width=True):
-            nueva = {'Dia': '', 'Nombre': ''}
-            for c in conceptos_list:
-                nueva[c] = 0
-            p["filas"].append(nueva)
-            st.rerun()
-    with col2:
-        if st.button("🗑️ Borrar todo", use_container_width=True):
-            p["filas"] = []
-            st.rerun()
-    with col3:
-        if st.button("📋 Duplicar última fila", use_container_width=True) and p["filas"]:
-            copia = p["filas"][-1].copy()
-            copia['Nombre'] = ''
-            p["filas"].append(copia)
-            st.rerun()
-
-    if not p["filas"]:
-        st.warning("No hay filas. Pulsa **'➕ Añadir fila'** para empezar.")
+    # IMPORTANTE: usar solo conceptos válidos
+    conceptos_validos = obtener_conceptos_validos(p)
+    
+    if len(conceptos_validos) == 0:
+        st.error("❌ **No hay conceptos definidos.** Ve a la Pestaña 1 y añade al menos un concepto con nombre.")
     else:
-        df_edit = pd.DataFrame(p["filas"])
-        for c in conceptos_list:
-            if c not in df_edit.columns:
-                df_edit[c] = 0
-        df_edit = df_edit[['Dia', 'Nombre'] + conceptos_list]
+        conceptos_list = conceptos_validos['Concepto'].tolist()
+        precios_list = conceptos_validos['Precio'].tolist()
+        
+        st.caption(f"📊 Trabajando con **{len(conceptos_list)}** conceptos")
 
-        col_config = {
-            "Dia": st.column_config.TextColumn("DÍA", width="small"),
-            "Nombre": st.column_config.TextColumn("NOMBRE", width="medium"),
-        }
-        for c in conceptos_list:
-            col_config[c] = st.column_config.NumberColumn(c, min_value=0, step=1, format="%d", width="small")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            if st.button("➕ Añadir fila", use_container_width=True):
+                nueva = {'Dia': '', 'Nombre': ''}
+                for c in conceptos_list:
+                    nueva[c] = 0
+                p["filas"].append(nueva)
+                st.rerun()
+        with col2:
+            if st.button("🗑️ Borrar todo", use_container_width=True):
+                p["filas"] = []
+                st.rerun()
+        with col3:
+            if st.button("📋 Duplicar última fila", use_container_width=True) and p["filas"]:
+                copia = p["filas"][-1].copy()
+                copia['Nombre'] = ''
+                p["filas"].append(copia)
+                st.rerun()
 
-        with st.form(key=f"form_datos_{st.session_state.proyecto_activo}"):
-            df_editado = st.data_editor(
-                df_edit,
-                num_rows="dynamic",
-                use_container_width=True,
-                column_config=col_config,
-                key=f"editor_datos_{st.session_state.proyecto_activo}",
-                hide_index=True
-            )
-            submit = st.form_submit_button("💾 Guardar cambios", use_container_width=True, type="primary")
+        if not p["filas"]:
+            st.warning("No hay filas. Pulsa **'➕ Añadir fila'** para empezar.")
+        else:
+            # Adaptar filas existentes a los conceptos actuales (por si acaso)
+            p["filas"] = adaptar_filas_a_conceptos(p["filas"], conceptos_validos)
             
-            if submit:
-                p["filas"] = df_editado.fillna(0).to_dict('records')
-                st.success("✅ Cambios guardados correctamente")
+            df_edit = pd.DataFrame(p["filas"])
+            df_edit = df_edit[['Dia', 'Nombre'] + conceptos_list]
 
-    st.markdown("---")
-    st.subheader("💰 Resumen")
-    
-    totales_fila = []
-    for fila in p["filas"]:
-        total = 0.0
-        for i, c in enumerate(conceptos_list):
-            try:
-                qty = float(fila.get(c, 0) or 0)
-                total += qty * precios_list[i]
-            except:
-                pass
-        totales_fila.append(total)
-    
-    total_general = sum(totales_fila)
-    
-    if p["filas"]:
-        df_resumen = pd.DataFrame({
-            'DÍA': [f.get('Dia', '') for f in p["filas"]],
-            'NOMBRE': [f.get('Nombre', '') for f in p["filas"]],
-            'TOTAL (€)': [f"{t:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".") for t in totales_fila]
-        })
-        st.dataframe(df_resumen, use_container_width=True, hide_index=True)
-        st.metric("TOTAL GENERAL", f"{total_general:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
-    
-    p["totales"] = totales_fila
-    p["total_general"] = total_general
+            col_config = {
+                "Dia": st.column_config.TextColumn("DÍA", width="small"),
+                "Nombre": st.column_config.TextColumn("NOMBRE", width="medium"),
+            }
+            for c in conceptos_list:
+                col_config[c] = st.column_config.NumberColumn(c, min_value=0, step=1, format="%d", width="small")
+
+            with st.form(key=f"form_datos_{st.session_state.proyecto_activo}"):
+                df_editado = st.data_editor(
+                    df_edit,
+                    num_rows="dynamic",
+                    use_container_width=True,
+                    column_config=col_config,
+                    key=f"editor_datos_{st.session_state.proyecto_activo}",
+                    hide_index=True
+                )
+                submit = st.form_submit_button("💾 Guardar cambios", use_container_width=True, type="primary")
+                
+                if submit:
+                    p["filas"] = df_editado.fillna(0).to_dict('records')
+                    st.success("✅ Cambios guardados correctamente")
+
+        st.markdown("---")
+        st.subheader("💰 Resumen")
+        
+        totales_fila = []
+        for fila in p["filas"]:
+            total = 0.0
+            for i, c in enumerate(conceptos_list):
+                try:
+                    qty = float(fila.get(c, 0) or 0)
+                    total += qty * precios_list[i]
+                except:
+                    pass
+            totales_fila.append(total)
+        
+        total_general = sum(totales_fila)
+        
+        if p["filas"]:
+            df_resumen = pd.DataFrame({
+                'DÍA': [f.get('Dia', '') for f in p["filas"]],
+                'NOMBRE': [f.get('Nombre', '') for f in p["filas"]],
+                'TOTAL (€)': [f"{t:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".") for t in totales_fila]
+            })
+            st.dataframe(df_resumen, use_container_width=True, hide_index=True)
+            st.metric("TOTAL GENERAL", f"{total_general:,.2f} €".replace(",", "X").replace(".", ",").replace("X", "."))
+        
+        p["totales"] = totales_fila
+        p["total_general"] = total_general
 
 # --- PESTAÑA 3: EXCEL ---
 with tab3:
     st.subheader("📊 Exportar a Excel con formato oficial")
 
-    if not p["filas"]:
-        st.error("⚠️ No hay datos. Vuelve a la pestaña 2 y recuerda pulsar '💾 Guardar cambios'.")
+    conceptos_validos = obtener_conceptos_validos(p)
+    
+    if not p["filas"] or len(conceptos_validos) == 0:
+        st.error("⚠️ No hay datos o no hay conceptos definidos. Revisa las pestañas 1 y 2.")
     else:
         if st.button("🚀 Generar Excel", type="primary", use_container_width=True):
             wb = openpyxl.Workbook()
             ws = wb.active
             ws.title = st.session_state.proyecto_activo[:31]
 
-            conceptos_list = p["conceptos"]['Concepto'].tolist()
-            precios_list = p["conceptos"]['Precio'].tolist()
+            conceptos_list = conceptos_validos['Concepto'].tolist()
+            precios_list = conceptos_validos['Precio'].tolist()
             num_cols = 2 + len(conceptos_list) + 1
             last_col = get_column_letter(num_cols)
 
@@ -482,7 +532,8 @@ with tab4:
                 )
                 
                 if st.button("🚀 IMPORTAR DATOS", type="primary", use_container_width=True):
-                    conceptos_list = p["conceptos"]['Concepto'].tolist()
+                    conceptos_validos = obtener_conceptos_validos(p)
+                    conceptos_list = conceptos_validos['Concepto'].tolist()
                     
                     filas_importadas = []
                     for f in filas_bot:
@@ -546,3 +597,4 @@ with tab4:
                     st.rerun()
             except Exception as e:
                 st.error(f"Error al leer el archivo: {e}")
+                
