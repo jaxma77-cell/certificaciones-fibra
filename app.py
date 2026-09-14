@@ -12,7 +12,7 @@ st.set_page_config(page_title="Generador de Certificaciones", layout="wide")
 st.title("🛠️ Generador de Certificaciones de Fibra")
 
 # --- CONFIGURACIÓN GITHUB PARA EL BOT ---
-GITHUB_TOKEN = "PON_AQUI_TU_TOKEN_DE_GITHUB"  # ← IMPORTANTE: pon tu token aquí
+GITHUB_TOKEN = ""  # ← IMPORTANTE: pon tu token aquí
 GITHUB_USUARIO = "jaxma77-cell"
 GITHUB_REPO = "certificaciones-fibra"
 GITHUB_ARCHIVO_BOT = "datos_bot.json"
