@@ -9,7 +9,7 @@ import json
 st.set_page_config(page_title="Generador de Certificaciones", layout="wide")
 st.title("🛠️ Generador de Certificaciones de Fibra")
 
-# --- PLANTILLAS DE PROYECTOS ---
+# --- PLANTILLAS DE PROYECTOS (CORREGIDO) ---
 PLANTILLAS = {
     "FIBRAMOL JUNIO Y JULIO": {
         "empresa": "Fibranet",
@@ -23,7 +23,7 @@ PLANTILLAS = {
             'Empalme a fusión a partir de 64fo',
             'Medida de potencia de 1 fibra en 2a y 3a ventana'
         ],
-        "precios": [12.50, 25.00, 8.00, 5.00, 2.50, 2.00]
+        "precios": [12.50, 25.00, 8.00, 3.00, 5.00, 2.50, 2.00]  # ← AHORA SÍ SON 7
     },
     "Santomera Mayo 2024 (Fusionador)": {
         "empresa": "Fibranet Tecnologia y Sistemas SLU",
@@ -139,7 +139,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "4. Importar Excel"
 ])
 
-# --- PESTAÑA 1: CONCEPTOS Y PRECIOS ---
+# --- PESTAÑA 1 ---
 with tab1:
     st.subheader(f"📋 Proyecto: {st.session_state.proyecto_activo}")
     
@@ -200,7 +200,7 @@ with tab1:
             except Exception as e:
                 st.error(f"Error al leer el archivo: {e}")
 
-# --- PESTAÑA 2: REGISTRO (con "Nombre" en lugar de "Ubicación") ---
+# --- PESTAÑA 2 ---
 with tab2:
     st.subheader(f"📝 Registro de trabajos - {st.session_state.proyecto_activo}")
     
@@ -285,7 +285,7 @@ with tab2:
     p["totales"] = totales_fila
     p["total_general"] = total_general
 
-# --- PESTAÑA 3: EXCEL ---
+# --- PESTAÑA 3 ---
 with tab3:
     st.subheader("📊 Exportar a Excel con formato oficial")
 
@@ -323,7 +323,7 @@ with tab3:
             ws['A3'].alignment = center
 
             ws['A4'] = 'DÍA'
-            ws['B4'] = 'NOMBRE'   # <-- CAMBIO: antes ponía UBICACIÓN
+            ws['B4'] = 'NOMBRE'
             for i, c in enumerate(conceptos_list):
                 ws.cell(row=4, column=i+3, value=c)
             ws.cell(row=4, column=num_cols, value='TOTAL')
@@ -346,7 +346,7 @@ with tab3:
             start_row = 6
             for idx, fila in enumerate(p["filas"]):
                 ws.cell(row=start_row, column=1, value=fila.get('Dia', '')).border = thin
-                ws.cell(row=start_row, column=2, value=fila.get('Nombre', '')).border = thin  # <-- CAMBIO
+                ws.cell(row=start_row, column=2, value=fila.get('Nombre', '')).border = thin
                 for i, c in enumerate(conceptos_list):
                     val = fila.get(c, 0)
                     try:
@@ -393,7 +393,7 @@ with tab3:
             )
             st.success("✅ ¡Excel generado correctamente!")
 
-# --- PESTAÑA 4: IMPORTAR ---
+# --- PESTAÑA 4 ---
 with tab4:
     st.subheader("📥 Importar datos desde un Excel existente")
     st.info("Sube un Excel generado previamente por esta app para seguir editándolo.")
@@ -417,7 +417,7 @@ with tab4:
             while ws.cell(row=row, column=1).value or ws.cell(row=row, column=2).value:
                 fila = {
                     'Dia': ws.cell(row=row, column=1).value or '',
-                    'Nombre': ws.cell(row=row, column=2).value or ''   # <-- CAMBIO: antes 'Ubicacion'
+                    'Nombre': ws.cell(row=row, column=2).value or ''
                 }
                 for i, c in enumerate(conceptos_imp):
                     val = ws.cell(row=row, column=i+3).value
