@@ -373,7 +373,7 @@ with tab3:
                     if st.button("🚀 IMPORTAR DATOS", type="primary", use_container_width=True):
                         nuevas = []
                         for f in filas_bot:
-                            fila = {'Dia': '', 'Nombre': f['Nombre']}
+                            fila = {'Dia': f.get('Dia', ''), 'Nombre': f['Nombre']}
                             cantidades = f.get('cantidades', [])
                             for i, c in enumerate(conceptos_list): fila[c] = cantidades[i] if i < len(cantidades) else 0
                             nuevas.append(fila)
