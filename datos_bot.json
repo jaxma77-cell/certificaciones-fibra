@@ -1,5 +1,19 @@
 {
   "FIBRAMOL": {
-    "filas": []
+    "filas": [
+      {
+        "Nombre": "Tu-tia.en",
+        "cantidades": [
+          1,
+          2,
+          4,
+          4,
+          2,
+          0,
+          6
+        ],
+        "total": 128.5
+      }
+    ]
   }
 }
