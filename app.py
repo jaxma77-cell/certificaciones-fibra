@@ -10,7 +10,7 @@ import base64
 import os
 import plotly.express as px
 
-st.set_page_config(page_title="Certificaciones Fibra", layout="wide", page_icon="🛠️")
+st.set_page_config(page_title="Certificaciones Fibra", layout="wide", page_icon="️")
 
 # --- CONFIGURACIÓN GITHUB ---
 try:
@@ -68,7 +68,7 @@ def calcular_totales(filas, conceptos_list, precios_list):
 def formato_euro(valor):
     return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# --- FUNCIÓN: SINCRONIZAR CONCEPTOS CON GITHUB (NUEVA) ---
+# --- FUNCIÓN: SINCRONIZAR CONCEPTOS CON GITHUB ---
 def sincronizar_config_bot(nombre_proyecto_app, conceptos_list, precios_list):
     if not GITHUB_TOKEN:
         return False, "No hay token"
@@ -132,7 +132,7 @@ def borrar_en_github(tipo, valor, nombre_proyecto_app):
         if tipo == 'dia':
             filas_filtradas = [f for f in filas_originales if f.get('Dia') != valor]; campo = 'Día'
         elif tipo == 'ubicacion':
-            filas_filtradas = [f for f in filas_originales if f.get('Nombre') != valor]; campo = 'Ubicación'
+            filas_filtradas = [f for f in filas_originales if f.get('Nombre') != valor]; campo = 'Nombre'
         else: return False, "Tipo no válido"
         
         num_borradas = len(filas_originales) - len(filas_filtradas)
@@ -149,7 +149,7 @@ def borrar_en_github(tipo, valor, nombre_proyecto_app):
     except Exception as e:
         return False, f"Error: {str(e)}"
 
-# --- CSS VISIBILIDAD ---
+# --- CSS VISIBILIDAD (CORREGIDO PARA BOTONES OSCUROS) ---
 st.markdown("""
 <style>
 .stApp { background-color: #ffffff !important; }
@@ -159,7 +159,17 @@ st.markdown("""
 .stMetric div[data-testid="stMetricValue"] { color: #000000 !important; font-weight: bold !important; font-size: 24px !important; }
 section[data-testid="stSidebar"] { background-color: #f5f5f5 !important; }
 section[data-testid="stSidebar"] * { color: #000000 !important; }
+
+/* Botones principales azules */
 .stButton button { background-color: #0066cc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; }
+
+/* CORRECCIÓN: Texto blanco en botones oscuros (Descargar, Upload, Secundarios) */
+.stButton button[kind="secondary"],
+div[data-testid="stDownloadButton"] button,
+div[data-testid="stFileUploader"] * {
+    color: #ffffff !important;
+}
+
 .stTabs [data-baseweb="tab"] { background-color: #e0e0e0 !important; color: #000000 !important; font-weight: bold !important; }
 .stTabs [aria-selected="true"] { background-color: #ffffff !important; border-top: 3px solid #0066cc !important; }
 input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #999999 !important; }
@@ -169,7 +179,7 @@ div[data-testid="stDataFrame"] { background-color: #ffffff !important; border: 1
 
 # --- BARRA LATERAL ---
 with st.sidebar:
-    st.header(" PROYECTOS", divider=True)
+    st.header("📁 PROYECTOS", divider=True)
     proyecto_seleccionado = st.selectbox("Selecciona proyecto:", options=list(st.session_state.proyectos.keys()), index=list(st.session_state.proyectos.keys()).index(st.session_state.proyecto_activo))
     st.session_state.proyecto_activo = proyecto_seleccionado
     st.divider()
@@ -214,11 +224,11 @@ st.divider()
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("💰 TOTAL", formato_euro(total_general))
 col2.metric("📋 FILAS", len(p["filas"]))
-col3.metric("️ CONCEPTOS", len(conceptos_list))
+col3.metric("🏷️ CONCEPTOS", len(conceptos_list))
 col4.metric("📊 MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas"] else 0))
 st.divider()
 
-tab1, tab2, tab3, tab4 = st.tabs([" REGISTRO", "📊 ANÁLISIS", "📥 IMPORTAR", "⚙️ CONFIGURACIÓN"])
+tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", "📊 ANÁLISIS", " IMPORTAR", "⚙️ CONFIGURACIÓN"])
 
 with tab1:
     if not conceptos_list: st.error("❌ Añade conceptos en CONFIGURACIÓN")
@@ -234,8 +244,8 @@ with tab1:
         
         st.divider()
         
-        with st.expander("🗑️ ELIMINAR REGISTROS (Sincronizado con GitHub)", expanded=False):
-            st.markdown("️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
+        with st.expander("️ ELIMINAR REGISTROS (Sincronizado con GitHub)", expanded=False):
+            st.markdown("⚠️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
             st.caption(f"📌 Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
             col_elim1, col_elim2 = st.columns(2)
             
@@ -246,25 +256,26 @@ with tab1:
                         dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
                         if dia_a_eliminar:
                             num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
-                            if st.button(f"️ Borrar {num_filas_dia} filas de '{dia_a_eliminar}'", use_container_width=True, type="secondary"):
+                            if st.button(f"🗑️ Borrar {num_filas_dia} filas de '{dia_a_eliminar}'", use_container_width=True, type="secondary"):
                                 p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
                                 ok, msg = borrar_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
                                 if ok: st.success(f"✅ {msg}")
-                                else: st.warning(f"️ Borrado localmente, pero: {msg}")
+                                else: st.warning(f"⚠️ Borrado localmente, pero: {msg}")
                                 st.rerun()
             
             with col_elim2:
                 if p["filas"]:
-                    ubicaciones = sorted(set(f.get('Nombre', '') for f in p["filas"] if f.get('Nombre')))
-                    if ubicaciones:
-                        ubic_a_eliminar = st.selectbox("📍 Eliminar ubicación:", [""] + ubicaciones, key="sel_elim_ubic")
-                        if ubic_a_eliminar:
-                            num_filas_ubic = len([f for f in p["filas"] if f.get('Nombre') == ubic_a_eliminar])
-                            if st.button(f"🗑️ Borrar {num_filas_ubic} filas de '{ubic_a_eliminar}'", use_container_width=True, type="secondary"):
-                                p["filas"] = [f for f in p["filas"] if f.get('Nombre') != ubic_a_eliminar]
-                                ok, msg = borrar_en_github('ubicacion', ubic_a_eliminar, st.session_state.proyecto_activo)
+                    # CAMBIO: "ubicaciones" -> "nombres"
+                    nombres = sorted(set(f.get('Nombre', '') for f in p["filas"] if f.get('Nombre')))
+                    if nombres:
+                        nombre_a_eliminar = st.selectbox("📍 Eliminar nombre:", [""] + nombres, key="sel_elim_nombre")
+                        if nombre_a_eliminar:
+                            num_filas_nombre = len([f for f in p["filas"] if f.get('Nombre') == nombre_a_eliminar])
+                            if st.button(f"️ Borrar {num_filas_nombre} filas de '{nombre_a_eliminar}'", use_container_width=True, type="secondary"):
+                                p["filas"] = [f for f in p["filas"] if f.get('Nombre') != nombre_a_eliminar]
+                                ok, msg = borrar_en_github('ubicacion', nombre_a_eliminar, st.session_state.proyecto_activo)
                                 if ok: st.success(f"✅ {msg}")
-                                else: st.warning(f"⚠️ Borrado localmente, pero: {msg}")
+                                else: st.warning(f"️ Borrado localmente, pero: {msg}")
                                 st.rerun()
 
         st.divider()
@@ -288,7 +299,7 @@ with tab1:
             
             with st.form("editar"):
                 df_edit = st.data_editor(df, num_rows="dynamic", column_config=col_config, hide_index=True, use_container_width=True)
-                if st.form_submit_button(" GUARDAR CAMBIOS", use_container_width=True, type="primary"):
+                if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
                     nuevas = df_edit.fillna(0).to_dict('records')
                     for fila in nuevas:
                         fila["total"] = sum(float(fila.get(c, 0)) * precios_list[i] for i, c in enumerate(conceptos_list))
@@ -300,7 +311,8 @@ with tab1:
         
         if p["filas"]:
             st.divider()
-            st.markdown("#### 📍 RESUMEN POR UBICACIÓN")
+            # CAMBIO: "UBICACIÓN" -> "NOMBRE"
+            st.markdown("####  RESUMEN POR NOMBRE")
             resumen = {}
             for i, f in enumerate(p["filas"]):
                 nom = f.get('Nombre', '') or '(sin nombre)'
@@ -311,13 +323,13 @@ with tab1:
 with tab2:
     if not p["filas"]: st.info("Sin datos")
     else:
-        st.markdown("### 📈 TOTAL POR CONCEPTO")
+        st.markdown("###  TOTAL POR CONCEPTO")
         totales_concepto = [sum(float(f.get(c, 0) or 0) * precios_list[i] for f in p["filas"]) for i, c in enumerate(conceptos_list)]
         fig = px.bar(x=conceptos_list, y=totales_concepto, labels={'x': 'Concepto', 'y': 'Total (€)'}, color=totales_concepto, color_continuous_scale='Blues')
         fig.update_layout(height=400, showlegend=False, xaxis_tickangle=-30, plot_bgcolor='white', paper_bgcolor='white')
         st.plotly_chart(fig, use_container_width=True)
         st.divider()
-        st.markdown("### 📋 ESTADÍSTICAS")
+        st.markdown("###  ESTADÍSTICAS")
         stats = []
         for i, c in enumerate(conceptos_list):
             cantidades = [float(f.get(c, 0) or 0) for f in p["filas"] if float(f.get(c, 0) or 0) > 0]
@@ -328,7 +340,7 @@ with tab3:
     tab_tel, tab_exc = st.tabs(["🤖 DESDE TELEGRAM", "📄 DESDE EXCEL"])
     with tab_tel:
         st.info("Importar datos guardados por el bot de Telegram en GitHub")
-        if not GITHUB_TOKEN: st.warning("️ Configura GITHUB_TOKEN en Secrets")
+        if not GITHUB_TOKEN: st.warning("⚠️ Configura GITHUB_TOKEN en Secrets")
         else:
             if st.button("🔄 LEER DATOS DEL BOT", use_container_width=True, type="primary"):
                 try:
@@ -345,7 +357,7 @@ with tab3:
                                 nf = len(dp.get("filas", [])); tp = sum(f.get("total", 0) for f in dp.get("filas", []))
                                 st.markdown(f"- **{pn}**: {nf} filas → {formato_euro(tp)}")
                             st.session_state.datos_bot = datos_bot; st.rerun()
-                    elif r.status_code == 404: st.warning("⚠️ El archivo no existe aún. Envía datos al bot primero.")
+                    elif r.status_code == 404: st.warning("️ El archivo no existe aún. Envía datos al bot primero.")
                 except Exception as e: st.error(f"❌ Error: {e}")
             
             if 'datos_bot' in st.session_state and st.session_state.datos_bot:
@@ -390,7 +402,7 @@ with tab3:
             except Exception as e: st.error(f"Error al leer: {e}")
 
 with tab4:
-    st.markdown("### 🏷️ CONCEPTOS Y PRECIOS")
+    st.markdown("### ️ CONCEPTOS Y PRECIOS")
     col1, col2 = st.columns(2)
     p["empresa"] = col1.text_input("EMPRESA:", p["empresa"]); p["fecha"] = col2.text_input("FECHA/MES:", p["fecha"])
     st.divider()
@@ -398,8 +410,7 @@ with tab4:
     edited = st.data_editor(p["conceptos"], num_rows="dynamic", use_container_width=True, column_config={"Concepto": st.column_config.TextColumn(width="large"), "Precio": st.column_config.NumberColumn(format="%.2f", min_value=0.0, step=0.5)})
     p["conceptos"] = edited.reset_index(drop=True)
     
-    # BOTÓN CLAVE: APLICAR Y SINCRONIZAR
-    if st.button("🔄 APLICAR CAMBIOS Y SINCRONIZAR CON EL BOT", use_container_width=True, type="primary"):
+    if st.button(" APLICAR CAMBIOS Y SINCRONIZAR CON EL BOT", use_container_width=True, type="primary"):
         p["filas"] = adaptar_filas(p["filas"], obtener_conceptos_validos(p))
         ok, msg = sincronizar_config_bot(st.session_state.proyecto_activo, conceptos_list, precios_list)
         if ok: st.success(f"✅ Conceptos actualizados localmente. {msg}")
@@ -413,7 +424,7 @@ with tab4:
         config_data = {"proyecto": st.session_state.proyecto_activo, "empresa": p["empresa"], "fecha": p["fecha"], "conceptos": conceptos_validos.to_dict(orient="records")}
         st.download_button("⬇️ DESCARGAR CONFIG (.json)", json.dumps(config_data, indent=2, ensure_ascii=False), f"config_{st.session_state.proyecto_activo.replace(' ', '_')}.json", use_container_width=True)
     with col_b:
-        uploaded = st.file_uploader("️ CARGAR CONFIG (.json)", type=["json"])
+        uploaded = st.file_uploader("CARGAR CONFIG (.json)", type=["json"])
         if uploaded:
             try:
                 data = json.load(uploaded); p["empresa"] = data.get("empresa", p["empresa"]); p["fecha"] = data.get("fecha", p["fecha"]); p["conceptos"] = pd.DataFrame(data.get("conceptos", [])); p["filas"] = []
@@ -450,5 +461,5 @@ with tab4:
         ws.column_dimensions['A'].width = 12; ws.column_dimensions['B'].width = 20
         for i in range(3, num_cols + 1): ws.column_dimensions[get_column_letter(i)].width = 18
         buffer = io.BytesIO(); wb.save(buffer); buffer.seek(0)
-        st.download_button("📥 DESCARGAR EXCEL", buffer, f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        st.download_button(" DESCARGAR EXCEL", buffer, f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         st.success("✅ Excel generado correctamente")
