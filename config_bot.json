@@ -1,0 +1,23 @@
+{
+  "FIBRAMOL": {
+    "conceptos": [
+      "Preparación extremo de cable",
+      "Preparación Sangrado",
+      "Instalación Caja de Empalme, CTO",
+      "Instalación Spliter",
+      "Empalme a fusión hasta 64fo",
+      "Empalme a fusión a partir de 64fo",
+      "Medida de potencia de 1 fibra en 2a y 3a ventana"
+    ],
+    "precios": [
+      12.5,
+      25.0,
+      8.0,
+      3.0,
+      5.0,
+      2.5,
+      2.0
+    ],
+    "num_conceptos": 7
+  }
+}
