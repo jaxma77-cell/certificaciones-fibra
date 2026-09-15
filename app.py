@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import openpyxl
@@ -149,54 +150,151 @@ def borrar_en_github(tipo, valor, nombre_proyecto_app):
     except Exception as e:
         return False, f"Error: {str(e)}"
 
-# --- CSS TODO CLARO (SIN FONDOS OSCUROS) ---
+# --- CSS ULTRA-CLARO (FUERZA TODO A BLANCO) ---
 st.markdown("""
 <style>
-.stApp { background-color: #ffffff !important; }
-.stApp * { color: #000000 !important; }
+/* Fondo general BLANCO PURO */
+.stApp, .stApp div, .stApp section { 
+    background-color: #ffffff !important; 
+    color: #000000 !important; 
+}
 
-/* Métricas con fondo gris claro */
-.stMetric { background-color: #f8f9fa !important; border: 2px solid #dee2e6 !important; border-radius: 8px !important; padding: 15px !important; }
-.stMetric label { color: #495057 !important; font-weight: bold !important; }
+/* TODO el texto en NEGRO */
+.stApp *, .stApp div *, .stApp section *, .stApp label, .stApp p, .stApp span, .stApp h1, .stApp h2, .stApp h3 {
+    color: #000000 !important;
+}
+
+/* Métricas - fondo gris muy claro */
+.stMetric { 
+    background-color: #f0f0f0 !important; 
+    border: 2px solid #cccccc !important; 
+    border-radius: 8px !important; 
+    padding: 15px !important; 
+}
+.stMetric label { color: #333333 !important; font-weight: bold !important; }
 .stMetric div[data-testid="stMetricValue"] { color: #000000 !important; font-weight: bold !important; font-size: 24px !important; }
 
-/* Sidebar gris muy claro */
-section[data-testid="stSidebar"] { background-color: #f8f9fa !important; }
-section[data-testid="stSidebar"] * { color: #000000 !important; }
-
-/* Botones principales azules con texto blanco */
-.stButton button[kind="primary"] { background-color: #0d6efd !important; color: #ffffff !important; border: none !important; font-weight: bold !important; }
-
-/* Botones secundarios con fondo blanco y borde azul */
-.stButton button[kind="secondary"], .stButton button:not([kind="primary"]) { 
+/* Sidebar - fondo blanco */
+section[data-testid="stSidebar"], section[data-testid="stSidebar"] div, section[data-testid="stSidebar"] * { 
     background-color: #ffffff !important; 
-    color: #0d6efd !important; 
-    border: 2px solid #0d6efd !important; 
+    color: #000000 !important; 
+}
+
+/* TODOS los botones - fondo BLANCO con borde azul y texto azul */
+.stButton button, .stButton button *, button[kind="secondary"], button:not([kind="primary"]) { 
+    background-color: #ffffff !important; 
+    color: #0066cc !important; 
+    border: 2px solid #0066cc !important; 
     font-weight: bold !important; 
 }
 
-/* Tabs con fondo blanco/gris claro */
-.stTabs [data-baseweb="tab"] { background-color: #f8f9fa !important; color: #000000 !important; font-weight: bold !important; border: 1px solid #dee2e6 !important; }
-.stTabs [aria-selected="true"] { background-color: #ffffff !important; border-top: 3px solid #0d6efd !important; color: #0d6efd !important; }
-
-/* Inputs y selectores con fondo blanco */
-input, select { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #dee2e6 !important; }
-
-/* Tablas con fondo blanco */
-div[data-testid="stDataFrame"] { background-color: #ffffff !important; border: 2px solid #dee2e6 !important; }
-
-/* Download button y uploader con fondo claro */
-div[data-testid="stDownloadButton"] button { 
-    background-color: #ffffff !important; 
-    color: #0d6efd !important; 
-    border: 2px solid #0d6efd !important;
+/* Botón PRIMARIO - fondo AZUL con texto BLANCO */
+.stButton button[kind="primary"] { 
+    background-color: #0066cc !important; 
+    color: #ffffff !important; 
+    border: 2px solid #0066cc !important; 
 }
-div[data-testid="stFileUploader"] { background-color: #ffffff !important; border: 2px dashed #dee2e6 !important; }
-div[data-testid="stFileUploader"] * { color: #000000 !important; }
 
-/* Expander con fondo blanco */
-.streamlit-expanderHeader { background-color: #ffffff !important; border: 2px solid #dee2e6 !important; color: #000000 !important; }
-.streamlit-expanderHeader * { color: #000000 !important; }
+/* Download button - BLANCO con borde azul */
+div[data-testid="stDownloadButton"] button, .stDownloadButton button { 
+    background-color: #ffffff !important; 
+    color: #0066cc !important; 
+    border: 2px solid #0066cc !important;
+}
+div[data-testid="stDownloadButton"] button *, .stDownloadButton button * {
+    color: #0066cc !important;
+}
+
+/* File uploader - BLANCO con borde discontinuo */
+div[data-testid="stFileUploader"], .stFileUploader { 
+    background-color: #ffffff !important; 
+    border: 2px dashed #cccccc !important;
+    color: #000000 !important;
+}
+div[data-testid="stFileUploader"] *, .stFileUploader * { 
+    color: #000000 !important; 
+    background-color: #ffffff !important;
+}
+div[data-testid="stFileUploader"] button {
+    background-color: #ffffff !important;
+    color: #0066cc !important;
+    border: 2px solid #0066cc !important;
+}
+
+/* Tabs - fondo blanco/gris claro */
+.stTabs [data-baseweb="tab"] { 
+    background-color: #f8f8f8 !important; 
+    color: #000000 !important; 
+    font-weight: bold !important; 
+    border: 1px solid #cccccc !important; 
+}
+.stTabs [aria-selected="true"] { 
+    background-color: #ffffff !important; 
+    border-top: 3px solid #0066cc !important; 
+    color: #0066cc !important; 
+}
+.stTabs [data-baseweb="tab"] * {
+    color: #000000 !important;
+}
+
+/* Inputs y selectores - fondo blanco */
+input, select, textarea { 
+    background-color: #ffffff !important; 
+    color: #000000 !important; 
+    border: 2px solid #cccccc !important; 
+}
+
+/* Tablas - fondo blanco */
+div[data-testid="stDataFrame"], .stDataFrame { 
+    background-color: #ffffff !important; 
+    border: 2px solid #cccccc !important; 
+}
+div[data-testid="stDataFrame"] *, .stDataFrame * {
+    color: #000000 !important;
+}
+
+/* Expander - fondo blanco */
+.streamlit-expanderHeader, div[data-testid="stExpander"] { 
+    background-color: #ffffff !important; 
+    border: 2px solid #cccccc !important; 
+    color: #000000 !important; 
+}
+.streamlit-expanderHeader *, div[data-testid="stExpander"] * { 
+    color: #000000 !important; 
+}
+
+/* Alertas e info - fondo blanco con borde */
+.stAlert, div[data-testid="stAlert"] {
+    background-color: #ffffff !important;
+    border: 2px solid #cccccc !important;
+    color: #000000 !important;
+}
+.stAlert *, div[data-testid="stAlert"] * {
+    color: #000000 !important;
+}
+
+/* Selectbox y multiselect */
+div[data-testid="stSelectbox"], div[data-testid="stMultiSelect"] {
+    background-color: #ffffff !important;
+}
+div[data-testid="stSelectbox"] *, div[data-testid="stMultiSelect"] * {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+}
+
+/* Radio y checkbox */
+.stRadio *, .stCheckbox * {
+    color: #000000 !important;
+}
+
+/* Data editor */
+div[data-testid="stDataFrame"] table {
+    background-color: #ffffff !important;
+}
+div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -240,18 +338,18 @@ totales = calcular_totales(p["filas"], conceptos_list, precios_list)
 total_general = sum(totales) if totales else 0
 p["totales"] = totales; p["total_general"] = total_general
 
-st.title(f"🛠️ {st.session_state.proyecto_activo}")
+st.title(f"️ {st.session_state.proyecto_activo}")
 st.caption(f"**{p['empresa']}** · {p['fecha']}")
 st.divider()
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("💰 TOTAL", formato_euro(total_general))
 col2.metric("📋 FILAS", len(p["filas"]))
-col3.metric("️ CONCEPTOS", len(conceptos_list))
+col3.metric("🏷️ CONCEPTOS", len(conceptos_list))
 col4.metric("📊 MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas"] else 0))
 st.divider()
 
-tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", "📊 ANÁLISIS", " IMPORTAR", "⚙️ CONFIGURACIÓN"])
+tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", "📊 ANÁLISIS", "📥 IMPORTAR", "⚙️ CONFIGURACIÓN"])
 
 with tab1:
     if not conceptos_list: st.error("❌ Añade conceptos en CONFIGURACIÓN")
@@ -267,10 +365,10 @@ with tab1:
         
         st.divider()
         
-        # SECCIÓN DE ELIMINAR - AHORA MÁS VISIBLE
+        # SECCIÓN DE ELIMINAR - MUY VISIBLE
         st.markdown("### 🗑️ ELIMINAR REGISTROS DE GITHUB")
-        st.info("️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
-        st.caption(f"📌 Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
+        st.info("⚠️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
+        st.caption(f" Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
         
         col_elim1, col_elim2 = st.columns(2)
         
@@ -278,10 +376,10 @@ with tab1:
             if p["filas"]:
                 dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
                 if dias:
-                    dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
+                    dia_a_eliminar = st.selectbox(" Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
                     if dia_a_eliminar:
                         num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
-                        if st.button(f"🗑️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
+                        if st.button(f"️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
                             p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
                             ok, msg = borrar_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
                             if ok: st.success(f"✅ {msg}")
@@ -368,7 +466,7 @@ with tab2:
         st.dataframe(pd.DataFrame(stats), use_container_width=True, hide_index=True)
 
 with tab3:
-    tab_tel, tab_exc = st.tabs([" DESDE TELEGRAM", "📄 DESDE EXCEL"])
+    tab_tel, tab_exc = st.tabs(["🤖 DESDE TELEGRAM", "📄 DESDE EXCEL"])
     with tab_tel:
         st.info("Importar datos guardados por el bot de Telegram en GitHub")
         if not GITHUB_TOKEN: st.warning("⚠️ Configura GITHUB_TOKEN en Secrets")
@@ -426,7 +524,7 @@ with tab3:
                         val = ws.cell(row=row, column=i+3).value; fila[c] = int(float(val)) if val else 0
                     filas_imp.append(fila); row += 1
                 st.success(f"✅ Leído: {len(filas_imp)} filas, {len(conceptos_imp)} conceptos")
-                if st.button("💾 CARGAR COMO NUEVO PROYECTO", type="primary", use_container_width=True):
+                if st.button(" CARGAR COMO NUEVO PROYECTO", type="primary", use_container_width=True):
                     nombre_nuevo = f"{nombre_proy} (importado)"
                     st.session_state.proyectos[nombre_nuevo] = {"empresa": empresa, "fecha": str(fecha), "conceptos": pd.DataFrame({"Concepto": conceptos_imp, "Precio": precios_imp}), "filas": filas_imp}
                     st.session_state.proyecto_activo = nombre_nuevo; st.success("✅ Proyecto cargado correctamente"); st.rerun()
@@ -441,11 +539,11 @@ with tab4:
     edited = st.data_editor(p["conceptos"], num_rows="dynamic", use_container_width=True, column_config={"Concepto": st.column_config.TextColumn(width="large"), "Precio": st.column_config.NumberColumn(format="%.2f", min_value=0.0, step=0.5)})
     p["conceptos"] = edited.reset_index(drop=True)
     
-    if st.button("🔄 APLICAR CAMBIOS Y SINCRONIZAR CON EL BOT", use_container_width=True, type="primary"):
+    if st.button(" APLICAR CAMBIOS Y SINCRONIZAR CON EL BOT", use_container_width=True, type="primary"):
         p["filas"] = adaptar_filas(p["filas"], obtener_conceptos_validos(p))
         ok, msg = sincronizar_config_bot(st.session_state.proyecto_activo, conceptos_list, precios_list)
         if ok: st.success(f"✅ Conceptos actualizados localmente. {msg}")
-        else: st.warning(f"️ Conceptos actualizados localmente, pero: {msg}")
+        else: st.warning(f"⚠️ Conceptos actualizados localmente, pero: {msg}")
         st.rerun()
     
     st.divider()
@@ -463,7 +561,7 @@ with tab4:
             except Exception as e: st.error(f"Error: {e}")
     
     st.divider()
-    st.markdown("### 📤 EXPORTAR A EXCEL")
+    st.markdown("###  EXPORTAR A EXCEL")
     if st.button("🚀 GENERAR EXCEL", type="primary", use_container_width=True, disabled=not p["filas"]):
         wb = openpyxl.Workbook(); ws = wb.active; ws.title = st.session_state.proyecto_activo[:31]
         num_cols = 2 + len(conceptos_list) + 1; last_col = get_column_letter(num_cols)
