@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import openpyxl
@@ -11,7 +10,7 @@ import base64
 import os
 import plotly.express as px
 
-st.set_page_config(page_title="Certificaciones Fibra", layout="wide", page_icon="️")
+st.set_page_config(page_title="Certificaciones Fibra", layout="wide", page_icon="🛠️")
 
 # --- CONFIGURACIÓN GITHUB ---
 try:
@@ -150,151 +149,26 @@ def borrar_en_github(tipo, valor, nombre_proyecto_app):
     except Exception as e:
         return False, f"Error: {str(e)}"
 
-# --- CSS ULTRA-CLARO (FUERZA TODO A BLANCO) ---
+# --- CSS MODO OSCURO (RESTAURADO) ---
 st.markdown("""
 <style>
-/* Fondo general BLANCO PURO */
-.stApp, .stApp div, .stApp section { 
-    background-color: #ffffff !important; 
-    color: #000000 !important; 
-}
-
-/* TODO el texto en NEGRO */
-.stApp *, .stApp div *, .stApp section *, .stApp label, .stApp p, .stApp span, .stApp h1, .stApp h2, .stApp h3 {
-    color: #000000 !important;
-}
-
-/* Métricas - fondo gris muy claro */
-.stMetric { 
-    background-color: #f0f0f0 !important; 
-    border: 2px solid #cccccc !important; 
-    border-radius: 8px !important; 
-    padding: 15px !important; 
-}
-.stMetric label { color: #333333 !important; font-weight: bold !important; }
-.stMetric div[data-testid="stMetricValue"] { color: #000000 !important; font-weight: bold !important; font-size: 24px !important; }
-
-/* Sidebar - fondo blanco */
-section[data-testid="stSidebar"], section[data-testid="stSidebar"] div, section[data-testid="stSidebar"] * { 
-    background-color: #ffffff !important; 
-    color: #000000 !important; 
-}
-
-/* TODOS los botones - fondo BLANCO con borde azul y texto azul */
-.stButton button, .stButton button *, button[kind="secondary"], button:not([kind="primary"]) { 
-    background-color: #ffffff !important; 
-    color: #0066cc !important; 
-    border: 2px solid #0066cc !important; 
-    font-weight: bold !important; 
-}
-
-/* Botón PRIMARIO - fondo AZUL con texto BLANCO */
-.stButton button[kind="primary"] { 
-    background-color: #0066cc !important; 
-    color: #ffffff !important; 
-    border: 2px solid #0066cc !important; 
-}
-
-/* Download button - BLANCO con borde azul */
-div[data-testid="stDownloadButton"] button, .stDownloadButton button { 
-    background-color: #ffffff !important; 
-    color: #0066cc !important; 
-    border: 2px solid #0066cc !important;
-}
-div[data-testid="stDownloadButton"] button *, .stDownloadButton button * {
-    color: #0066cc !important;
-}
-
-/* File uploader - BLANCO con borde discontinuo */
-div[data-testid="stFileUploader"], .stFileUploader { 
-    background-color: #ffffff !important; 
-    border: 2px dashed #cccccc !important;
-    color: #000000 !important;
-}
-div[data-testid="stFileUploader"] *, .stFileUploader * { 
-    color: #000000 !important; 
-    background-color: #ffffff !important;
-}
-div[data-testid="stFileUploader"] button {
-    background-color: #ffffff !important;
-    color: #0066cc !important;
-    border: 2px solid #0066cc !important;
-}
-
-/* Tabs - fondo blanco/gris claro */
-.stTabs [data-baseweb="tab"] { 
-    background-color: #f8f8f8 !important; 
-    color: #000000 !important; 
-    font-weight: bold !important; 
-    border: 1px solid #cccccc !important; 
-}
-.stTabs [aria-selected="true"] { 
-    background-color: #ffffff !important; 
-    border-top: 3px solid #0066cc !important; 
-    color: #0066cc !important; 
-}
-.stTabs [data-baseweb="tab"] * {
-    color: #000000 !important;
-}
-
-/* Inputs y selectores - fondo blanco */
-input, select, textarea { 
-    background-color: #ffffff !important; 
-    color: #000000 !important; 
-    border: 2px solid #cccccc !important; 
-}
-
-/* Tablas - fondo blanco */
-div[data-testid="stDataFrame"], .stDataFrame { 
-    background-color: #ffffff !important; 
-    border: 2px solid #cccccc !important; 
-}
-div[data-testid="stDataFrame"] *, .stDataFrame * {
-    color: #000000 !important;
-}
-
-/* Expander - fondo blanco */
-.streamlit-expanderHeader, div[data-testid="stExpander"] { 
-    background-color: #ffffff !important; 
-    border: 2px solid #cccccc !important; 
-    color: #000000 !important; 
-}
-.streamlit-expanderHeader *, div[data-testid="stExpander"] * { 
-    color: #000000 !important; 
-}
-
-/* Alertas e info - fondo blanco con borde */
-.stAlert, div[data-testid="stAlert"] {
-    background-color: #ffffff !important;
-    border: 2px solid #cccccc !important;
-    color: #000000 !important;
-}
-.stAlert *, div[data-testid="stAlert"] * {
-    color: #000000 !important;
-}
-
-/* Selectbox y multiselect */
-div[data-testid="stSelectbox"], div[data-testid="stMultiSelect"] {
-    background-color: #ffffff !important;
-}
-div[data-testid="stSelectbox"] *, div[data-testid="stMultiSelect"] * {
-    color: #000000 !important;
-    background-color: #ffffff !important;
-}
-
-/* Radio y checkbox */
-.stRadio *, .stCheckbox * {
-    color: #000000 !important;
-}
-
-/* Data editor */
-div[data-testid="stDataFrame"] table {
-    background-color: #ffffff !important;
-}
-div[data-testid="stDataFrame"] td, div[data-testid="stDataFrame"] th {
-    background-color: #ffffff !important;
-    color: #000000 !important;
-}
+.stApp { background-color: #0e1117; color: #fafafa; }
+.stApp * { color: #fafafa !important; }
+.stMetric { background-color: #262730; border: 1px solid #3a3a3a; padding: 15px; border-radius: 10px; }
+.stMetric label { color: #fafafa !important; }
+.stMetric div[data-testid="stMetricValue"] { color: #4CAF50 !important; }
+section[data-testid="stSidebar"] { background-color: #1a1a1a; }
+section[data-testid="stSidebar"] * { color: #fafafa !important; }
+.stButton button { background-color: #0d6efd; color: white !important; }
+.stTabs [data-baseweb="tab"] { background-color: #262730; }
+.stTabs [aria-selected="true"] { background-color: #0e1117 !important; border-top: 3px solid #0d6efd !important; }
+input, select { background-color: #262730 !important; color: #fafafa !important; border: 1px solid #3a3a3a !important; }
+div[data-testid="stDataFrame"] { background-color: #262730 !important; border: 1px solid #3a3a3a !important; }
+div[data-testid="stDataFrame"] * { color: #fafafa !important; }
+.streamlit-expanderHeader { background-color: #262730 !important; border: 1px solid #3a3a3a !important; color: #fafafa !important; }
+.streamlit-expanderHeader * { color: #fafafa !important; }
+.stAlert { background-color: #262730 !important; border: 1px solid #3a3a3a !important; color: #fafafa !important; }
+.stAlert * { color: #fafafa !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -343,7 +217,7 @@ st.caption(f"**{p['empresa']}** · {p['fecha']}")
 st.divider()
 
 col1, col2, col3, col4 = st.columns(4)
-col1.metric("💰 TOTAL", formato_euro(total_general))
+col1.metric(" TOTAL", formato_euro(total_general))
 col2.metric("📋 FILAS", len(p["filas"]))
 col3.metric("🏷️ CONCEPTOS", len(conceptos_list))
 col4.metric("📊 MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas"] else 0))
@@ -368,7 +242,7 @@ with tab1:
         # SECCIÓN DE ELIMINAR - MUY VISIBLE
         st.markdown("### 🗑️ ELIMINAR REGISTROS DE GITHUB")
         st.info("⚠️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
-        st.caption(f" Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
+        st.caption(f"📌 Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
         
         col_elim1, col_elim2 = st.columns(2)
         
@@ -376,10 +250,10 @@ with tab1:
             if p["filas"]:
                 dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
                 if dias:
-                    dia_a_eliminar = st.selectbox(" Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
+                    dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
                     if dia_a_eliminar:
                         num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
-                        if st.button(f"️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
+                        if st.button(f"🗑️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
                             p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
                             ok, msg = borrar_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
                             if ok: st.success(f"✅ {msg}")
@@ -455,7 +329,7 @@ with tab2:
         st.markdown("### 📈 TOTAL POR CONCEPTO")
         totales_concepto = [sum(float(f.get(c, 0) or 0) * precios_list[i] for f in p["filas"]) for i, c in enumerate(conceptos_list)]
         fig = px.bar(x=conceptos_list, y=totales_concepto, labels={'x': 'Concepto', 'y': 'Total (€)'}, color=totales_concepto, color_continuous_scale='Blues')
-        fig.update_layout(height=400, showlegend=False, xaxis_tickangle=-30, plot_bgcolor='white', paper_bgcolor='white')
+        fig.update_layout(height=400, showlegend=False, xaxis_tickangle=-30, plot_bgcolor='#0e1117', paper_bgcolor='#0e1117')
         st.plotly_chart(fig, use_container_width=True)
         st.divider()
         st.markdown("### 📋 ESTADÍSTICAS")
@@ -524,7 +398,7 @@ with tab3:
                         val = ws.cell(row=row, column=i+3).value; fila[c] = int(float(val)) if val else 0
                     filas_imp.append(fila); row += 1
                 st.success(f"✅ Leído: {len(filas_imp)} filas, {len(conceptos_imp)} conceptos")
-                if st.button(" CARGAR COMO NUEVO PROYECTO", type="primary", use_container_width=True):
+                if st.button("💾 CARGAR COMO NUEVO PROYECTO", type="primary", use_container_width=True):
                     nombre_nuevo = f"{nombre_proy} (importado)"
                     st.session_state.proyectos[nombre_nuevo] = {"empresa": empresa, "fecha": str(fecha), "conceptos": pd.DataFrame({"Concepto": conceptos_imp, "Precio": precios_imp}), "filas": filas_imp}
                     st.session_state.proyecto_activo = nombre_nuevo; st.success("✅ Proyecto cargado correctamente"); st.rerun()
@@ -561,7 +435,7 @@ with tab4:
             except Exception as e: st.error(f"Error: {e}")
     
     st.divider()
-    st.markdown("###  EXPORTAR A EXCEL")
+    st.markdown("### 📤 EXPORTAR A EXCEL")
     if st.button("🚀 GENERAR EXCEL", type="primary", use_container_width=True, disabled=not p["filas"]):
         wb = openpyxl.Workbook(); ws = wb.active; ws.title = st.session_state.proyecto_activo[:31]
         num_cols = 2 + len(conceptos_list) + 1; last_col = get_column_letter(num_cols)
