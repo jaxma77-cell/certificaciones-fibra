@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import openpyxl
@@ -11,7 +12,6 @@ import os
 import plotly.express as px
 import plotly.graph_objects as go
 
-# Configuración de la página (se debe llamar antes de cualquier otro comando de st)
 st.set_page_config(
     page_title="Generador de Certificaciones", 
     layout="wide",
@@ -19,7 +19,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CONFIGURACIÓN GITHUB PARA EL BOT (Segura) ---
+# --- CONFIGURACIÓN GITHUB PARA EL BOT ---
 try:
     GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
 except Exception:
@@ -110,23 +110,163 @@ def calcular_totales(filas, conceptos_list, precios_list):
 def formato_euro(valor):
     return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# --- BARRA LATERAL MEJORADA ---
-with st.sidebar:
-    # Toggle de Modo Oscuro
-    modo_oscuro = st.toggle("🌙 Modo Oscuro", value=False, key="dark_mode_toggle")
-    if modo_oscuro:
-        st.markdown("""
-            <style>
-            .stApp { background-color: #0e1117; color: #fafafa; }
-            </style>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-            <style>
-            .stApp { background-color: #ffffff; color: #0e1117; }
-            </style>
-        """, unsafe_allow_html=True)
+# --- ESTILOS CSS MEJORADOS ---
+modo_oscuro = False
 
+with st.sidebar:
+    modo_oscuro = st.toggle("🌙 Modo Oscuro", value=False, key="dark_mode_toggle")
+
+# Aplicar estilos según el modo
+if modo_oscuro:
+    st.markdown("""
+        <style>
+        .stApp {
+            background-color: #0e1117;
+            color: #fafafa;
+        }
+        .stMetric {
+            background-color: #262730;
+            border: 1px solid #3a3a3a;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .stMetricLabel {
+            color: #fafafa !important;
+        }
+        .stMetricValue {
+            color: #4CAF50 !important;
+        }
+        div[data-testid="stSidebar"] {
+            background-color: #1a1a1a;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+else:
+    # MODO CLARO MEJORADO
+    st.markdown("""
+        <style>
+        .stApp {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+        
+        /* Mejorar las tarjetas de métricas */
+        .stMetric {
+            background-color: #ffffff;
+            border: 2px solid #e9ecef;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            transition: all 0.3s ease;
+        }
+        .stMetric:hover {
+            box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+        .stMetricLabel {
+            color: #495057 !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+        }
+        .stMetricValue {
+            color: #0d6efd !important;
+            font-weight: 700 !important;
+            font-size: 28px !important;
+        }
+        
+        /* Mejorar la barra lateral */
+        div[data-testid="stSidebar"] {
+            background-color: #ffffff;
+            border-right: 2px solid #e9ecef;
+        }
+        div[data-testid="stSidebar"] h1, 
+        div[data-testid="stSidebar"] h2, 
+        div[data-testid="stSidebar"] h3 {
+            color: #212529 !important;
+        }
+        
+        /* Mejorar las pestañas */
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 8px;
+        }
+        .stTabs [data-baseweb="tab"] {
+            background-color: #ffffff;
+            border-radius: 8px 8px 0 0;
+            padding: 12px 20px;
+            border: 2px solid #e9ecef;
+            color: #495057;
+            font-weight: 600;
+        }
+        .stTabs [aria-selected="true"] {
+            background-color: #0d6efd !important;
+            color: #ffffff !important;
+            border-color: #0d6efd !important;
+        }
+        
+        /* Mejorar los botones */
+        .stButton>button {
+            background-color: #0d6efd;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .stButton>button:hover {
+            background-color: #0b5ed7;
+            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+        }
+        .stButton>button[kind="primary"] {
+            background-color: #198754;
+        }
+        .stButton>button[kind="primary"]:hover {
+            background-color: #157347;
+        }
+        
+        /* Mejorar las tablas */
+        .stDataFrame {
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        /* Mejorar los títulos */
+        h1, h2, h3, h4 {
+            color: #212529 !important;
+            font-weight: 700 !important;
+        }
+        
+        /* Mejorar los contenedores de información */
+        .stAlert {
+            border-radius: 8px;
+            border: 2px solid;
+        }
+        
+        /* Mejorar los selectores */
+        .stSelectbox > div > div {
+            background-color: #ffffff;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        
+        /* Mejorar los inputs de texto */
+        .stTextInput > div > div > input {
+            background-color: #ffffff;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            color: #212529;
+        }
+        .stTextInput > div > div > input:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+# --- BARRA LATERAL ---
+with st.sidebar:
     st.markdown("## 🛠️ Certificaciones Fibra")
     st.markdown("---")
     
@@ -193,11 +333,9 @@ conceptos_validos = obtener_conceptos_validos(p)
 conceptos_list = conceptos_validos['Concepto'].tolist()
 precios_list = conceptos_validos['Precio'].tolist()
 
-# Adaptar filas por si han cambiado los conceptos
 if p["filas"]:
     p["filas"] = adaptar_filas_a_conceptos(p["filas"], conceptos_validos)
 
-# Calcular totales
 totales_fila = calcular_totales(p["filas"], conceptos_list, precios_list)
 total_general = sum(totales_fila)
 p["totales"] = totales_fila
@@ -207,7 +345,6 @@ p["total_general"] = total_general
 st.title(f"🛠️ {st.session_state.proyecto_activo}")
 st.caption(f"**{p['empresa']}** · {p['fecha']}")
 
-# Dashboard con métricas
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric("💰 Total General", formato_euro(total_general))
@@ -221,7 +358,6 @@ with col4:
 
 st.markdown("---")
 
-# Pestañas
 tab1, tab2, tab3, tab4 = st.tabs([
     "📝 Registro de Trabajos", 
     "📊 Análisis y Gráficos",
@@ -234,7 +370,6 @@ with tab1:
     if len(conceptos_list) == 0:
         st.error("❌ **No hay conceptos definidos.** Ve a la pestaña de Configuración y añade al menos uno.")
     else:
-        # Botones de acción
         col1, col2, col3 = st.columns([1, 1, 1])
         with col1:
             if st.button("➕ Añadir fila", use_container_width=True):
@@ -256,7 +391,6 @@ with tab1:
         
         st.markdown("---")
         
-        # FILTROS
         st.markdown("#### 🔍 Filtros")
         col_f1, col_f2, col_f3 = st.columns([2, 2, 1])
         
@@ -275,7 +409,6 @@ with tab1:
                 st.session_state.filtro_dia = "Todos los días"
                 st.rerun()
         
-        # Aplicar filtros
         filas_filtradas = p["filas"]
         if filtro_nombre:
             filas_filtradas = [f for f in filas_filtradas if filtro_nombre.upper() in str(f.get('Nombre', '')).upper()]
@@ -322,7 +455,6 @@ with tab1:
                         st.success(f"✅ {len(filas_nuevas)} filas guardadas correctamente en memoria")
                         st.rerun()
 
-        # Resumen por NOMBRE (Agrupado)
         if p["filas"]:
             st.markdown("---")
             st.markdown("#### 📍 Resumen acumulado por Nombre / Ubicación")
@@ -348,7 +480,6 @@ with tab2:
     else:
         st.markdown("### 📈 Gráficos y estadísticas")
         
-        # Gráfico 1: Total por concepto
         st.markdown("#### 💼 Total acumulado por concepto")
         totales_por_concepto = []
         for i, c in enumerate(conceptos_list):
@@ -363,13 +494,13 @@ with tab2:
         
         df_conceptos = pd.DataFrame({'Concepto': conceptos_list, 'Total (€)': totales_por_concepto})
         
-        fig1 = px.bar(df_conceptos, x='Concepto', y='Total (€)', color='Total (€)', color_continuous_scale='Blues', text_auto='.2f €')
+        fig1 = px.bar(df_conceptos, x='Concepto', y='Total (€)', color='Total (€)', 
+                     color_continuous_scale='Blues', text_auto='.2f €')
         fig1.update_layout(height=400, xaxis_tickangle=-30, showlegend=False)
         st.plotly_chart(fig1, use_container_width=True)
         
         st.markdown("---")
         
-        # Estadísticas por concepto
         st.markdown("#### 📋 Estadísticas detalladas por concepto")
         stats_conceptos = []
         for i, c in enumerate(conceptos_list):
@@ -497,7 +628,10 @@ with tab4:
         
         st.markdown("---")
         st.markdown("**Conceptos y precios unitarios**")
-        edited = st.data_editor(p["conceptos"], num_rows="dynamic", use_container_width=True, key=f"editor_conceptos_{st.session_state.proyecto_activo}", column_config={"Concepto": st.column_config.TextColumn("Concepto", width="large"), "Precio": st.column_config.NumberColumn("Precio (€)", format="%.2f €", min_value=0.0, step=0.5)})
+        edited = st.data_editor(p["conceptos"], num_rows="dynamic", use_container_width=True, 
+                               key=f"editor_conceptos_{st.session_state.proyecto_activo}", 
+                               column_config={"Concepto": st.column_config.TextColumn("Concepto", width="large"), 
+                                             "Precio": st.column_config.NumberColumn("Precio (€)", format="%.2f €", min_value=0.0, step=0.5)})
         p["conceptos"] = edited.reset_index(drop=True)
         
         if st.button("🔄 Aplicar cambios de conceptos a las filas", use_container_width=True, type="secondary"):
@@ -572,15 +706,22 @@ with tab4:
                 buffer = io.BytesIO()
                 wb.save(buffer)
                 buffer.seek(0)
-                st.download_button(label="📥 Descargar Excel", data=buffer, file_name=f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                st.download_button(label="📥 Descargar Excel", data=buffer, 
+                                  file_name=f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx", 
+                                  mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                                  use_container_width=True)
                 st.success("✅ ¡Excel generado correctamente!")
     
     with tab_precios:
         st.markdown("### 💾 Guardar y Cargar configuración")
         col_save, col_load = st.columns(2)
         with col_save:
-            config_data = {"proyecto": st.session_state.proyecto_activo, "empresa": p["empresa"], "fecha": p["fecha"], "conceptos": conceptos_validos.to_dict(orient="records")}
-            st.download_button(label="⬇️ Descargar Configuración", data=json.dumps(config_data, indent=2, ensure_ascii=False), file_name=f"precios_{st.session_state.proyecto_activo.replace(' ', '_')}.json", mime="application/json", use_container_width=True)
+            config_data = {"proyecto": st.session_state.proyecto_activo, "empresa": p["empresa"], 
+                          "fecha": p["fecha"], "conceptos": conceptos_validos.to_dict(orient="records")}
+            st.download_button(label="⬇️ Descargar Configuración", 
+                              data=json.dumps(config_data, indent=2, ensure_ascii=False), 
+                              file_name=f"precios_{st.session_state.proyecto_activo.replace(' ', '_')}.json", 
+                              mime="application/json", use_container_width=True)
         with col_load:
             uploaded_config = st.file_uploader("⬆️ Cargar Configuración (.json)", type=["json"])
             if uploaded_config is not None:
