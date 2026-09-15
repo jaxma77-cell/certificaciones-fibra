@@ -74,6 +74,60 @@ def formato_euro(valor):
     return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
 # --- FUNCIÓN BORRAR EN GITHUB (CON MAPEO INTELIGENTE DE NOMBRES) ---
+# --- FUNCIÓN: SINCRONIZAR CONCEPTOS CON GITHUB ---
+def sincronizar_config_bot(nombre_proyecto_app, conceptos_list, precios_list):
+    """Actualiza el archivo config_bot.json en GitHub con los conceptos actuales"""
+    if not GITHUB_TOKEN:
+        return False, "No hay token"
+    
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/config_bot.json"
+        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        
+        # Mapeo de nombres
+        mapeo = {
+            "FIBRAMOL JUNIO Y JULIO": "FIBRAMOL",
+            "Santomera Mayo 2024 (Fusionador)": "SANTOMERA",
+            "Santomera Mayo 2024": "SANTOMERA"
+        }
+        nombre_github = mapeo.get(nombre_proyecto_app, nombre_proyecto_app)
+        
+        # Leer archivo existente o crear nuevo
+        r = requests.get(url, headers=headers)
+        sha = None
+        datos = {}
+        
+        if r.status_code == 200:
+            contenido = base64.b64decode(r.json()["content"]).decode("utf-8")
+            sha = r.json()["sha"]
+            datos = json.loads(contenido)
+        
+        # Actualizar proyecto
+        datos[nombre_github] = {
+            "conceptos": conceptos_list,
+            "precios": precios_list,
+            "num_conceptos": len(conceptos_list)
+        }
+        
+        # Guardar
+        contenido_nuevo = json.dumps(datos, indent=2, ensure_ascii=False)
+        contenido_b64 = base64.b64encode(contenido_nuevo.encode("utf-8")).decode("utf-8")
+        
+        payload = {
+            "message": f"Actualizados conceptos de {nombre_github} ({len(conceptos_list)} conceptos)",
+            "content": contenido_b64
+        }
+        if sha:
+            payload["sha"] = sha
+        
+        r = requests.put(url, headers=headers, json=payload)
+        
+        if r.status_code in (200, 201):
+            return True, f"✅ Sincronizados {len(conceptos_list)} conceptos en GitHub"
+        else:
+            return False, f"Error: {r.status_code}"
+    except Exception as e:
+        return False, f"Error: {str(e)}"
 def borrar_en_github(tipo, valor, nombre_proyecto_app):
     if not GITHUB_TOKEN:
         return False, "❌ No hay GITHUB_TOKEN configurado"
