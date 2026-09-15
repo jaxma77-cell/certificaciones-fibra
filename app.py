@@ -149,31 +149,54 @@ def borrar_en_github(tipo, valor, nombre_proyecto_app):
     except Exception as e:
         return False, f"Error: {str(e)}"
 
-# --- CSS VISIBILIDAD (CORREGIDO PARA BOTONES OSCUROS) ---
+# --- CSS TODO CLARO (SIN FONDOS OSCUROS) ---
 st.markdown("""
 <style>
 .stApp { background-color: #ffffff !important; }
 .stApp * { color: #000000 !important; }
-.stMetric { background-color: #f0f0f0 !important; border: 2px solid #cccccc !important; border-radius: 8px !important; padding: 15px !important; }
-.stMetric label { color: #000000 !important; font-weight: bold !important; }
+
+/* Métricas con fondo gris claro */
+.stMetric { background-color: #f8f9fa !important; border: 2px solid #dee2e6 !important; border-radius: 8px !important; padding: 15px !important; }
+.stMetric label { color: #495057 !important; font-weight: bold !important; }
 .stMetric div[data-testid="stMetricValue"] { color: #000000 !important; font-weight: bold !important; font-size: 24px !important; }
-section[data-testid="stSidebar"] { background-color: #f5f5f5 !important; }
+
+/* Sidebar gris muy claro */
+section[data-testid="stSidebar"] { background-color: #f8f9fa !important; }
 section[data-testid="stSidebar"] * { color: #000000 !important; }
 
-/* Botones principales azules */
-.stButton button { background-color: #0066cc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; }
+/* Botones principales azules con texto blanco */
+.stButton button[kind="primary"] { background-color: #0d6efd !important; color: #ffffff !important; border: none !important; font-weight: bold !important; }
 
-/* CORRECCIÓN: Texto blanco en botones oscuros (Descargar, Upload, Secundarios) */
-.stButton button[kind="secondary"],
-div[data-testid="stDownloadButton"] button,
-div[data-testid="stFileUploader"] * {
-    color: #ffffff !important;
+/* Botones secundarios con fondo blanco y borde azul */
+.stButton button[kind="secondary"], .stButton button:not([kind="primary"]) { 
+    background-color: #ffffff !important; 
+    color: #0d6efd !important; 
+    border: 2px solid #0d6efd !important; 
+    font-weight: bold !important; 
 }
 
-.stTabs [data-baseweb="tab"] { background-color: #e0e0e0 !important; color: #000000 !important; font-weight: bold !important; }
-.stTabs [aria-selected="true"] { background-color: #ffffff !important; border-top: 3px solid #0066cc !important; }
-input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #999999 !important; }
-div[data-testid="stDataFrame"] { background-color: #ffffff !important; border: 1px solid #cccccc !important; }
+/* Tabs con fondo blanco/gris claro */
+.stTabs [data-baseweb="tab"] { background-color: #f8f9fa !important; color: #000000 !important; font-weight: bold !important; border: 1px solid #dee2e6 !important; }
+.stTabs [aria-selected="true"] { background-color: #ffffff !important; border-top: 3px solid #0d6efd !important; color: #0d6efd !important; }
+
+/* Inputs y selectores con fondo blanco */
+input, select { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #dee2e6 !important; }
+
+/* Tablas con fondo blanco */
+div[data-testid="stDataFrame"] { background-color: #ffffff !important; border: 2px solid #dee2e6 !important; }
+
+/* Download button y uploader con fondo claro */
+div[data-testid="stDownloadButton"] button { 
+    background-color: #ffffff !important; 
+    color: #0d6efd !important; 
+    border: 2px solid #0d6efd !important;
+}
+div[data-testid="stFileUploader"] { background-color: #ffffff !important; border: 2px dashed #dee2e6 !important; }
+div[data-testid="stFileUploader"] * { color: #000000 !important; }
+
+/* Expander con fondo blanco */
+.streamlit-expanderHeader { background-color: #ffffff !important; border: 2px solid #dee2e6 !important; color: #000000 !important; }
+.streamlit-expanderHeader * { color: #000000 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -224,7 +247,7 @@ st.divider()
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("💰 TOTAL", formato_euro(total_general))
 col2.metric("📋 FILAS", len(p["filas"]))
-col3.metric("🏷️ CONCEPTOS", len(conceptos_list))
+col3.metric("️ CONCEPTOS", len(conceptos_list))
 col4.metric("📊 MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas"] else 0))
 st.divider()
 
@@ -244,39 +267,48 @@ with tab1:
         
         st.divider()
         
-        with st.expander("️ ELIMINAR REGISTROS (Sincronizado con GitHub)", expanded=False):
-            st.markdown("⚠️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
-            st.caption(f"📌 Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
-            col_elim1, col_elim2 = st.columns(2)
-            
-            with col_elim1:
-                if p["filas"]:
-                    dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
-                    if dias:
-                        dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
-                        if dia_a_eliminar:
-                            num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
-                            if st.button(f"🗑️ Borrar {num_filas_dia} filas de '{dia_a_eliminar}'", use_container_width=True, type="secondary"):
-                                p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
-                                ok, msg = borrar_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
-                                if ok: st.success(f"✅ {msg}")
-                                else: st.warning(f"⚠️ Borrado localmente, pero: {msg}")
-                                st.rerun()
-            
-            with col_elim2:
-                if p["filas"]:
-                    # CAMBIO: "ubicaciones" -> "nombres"
-                    nombres = sorted(set(f.get('Nombre', '') for f in p["filas"] if f.get('Nombre')))
-                    if nombres:
-                        nombre_a_eliminar = st.selectbox("📍 Eliminar nombre:", [""] + nombres, key="sel_elim_nombre")
-                        if nombre_a_eliminar:
-                            num_filas_nombre = len([f for f in p["filas"] if f.get('Nombre') == nombre_a_eliminar])
-                            if st.button(f"️ Borrar {num_filas_nombre} filas de '{nombre_a_eliminar}'", use_container_width=True, type="secondary"):
-                                p["filas"] = [f for f in p["filas"] if f.get('Nombre') != nombre_a_eliminar]
-                                ok, msg = borrar_en_github('ubicacion', nombre_a_eliminar, st.session_state.proyecto_activo)
-                                if ok: st.success(f"✅ {msg}")
-                                else: st.warning(f"️ Borrado localmente, pero: {msg}")
-                                st.rerun()
+        # SECCIÓN DE ELIMINAR - AHORA MÁS VISIBLE
+        st.markdown("### 🗑️ ELIMINAR REGISTROS DE GITHUB")
+        st.info("️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
+        st.caption(f"📌 Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
+        
+        col_elim1, col_elim2 = st.columns(2)
+        
+        with col_elim1:
+            if p["filas"]:
+                dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
+                if dias:
+                    dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
+                    if dia_a_eliminar:
+                        num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
+                        if st.button(f"🗑️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
+                            p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
+                            ok, msg = borrar_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
+                            if ok: st.success(f"✅ {msg}")
+                            else: st.warning(f"⚠️ Borrado localmente, pero: {msg}")
+                            st.rerun()
+                else:
+                    st.write("No hay días registrados")
+            else:
+                st.write("No hay filas para eliminar")
+        
+        with col_elim2:
+            if p["filas"]:
+                nombres = sorted(set(f.get('Nombre', '') for f in p["filas"] if f.get('Nombre')))
+                if nombres:
+                    nombre_a_eliminar = st.selectbox("📍 Eliminar por nombre:", [""] + nombres, key="sel_elim_nombre")
+                    if nombre_a_eliminar:
+                        num_filas_nombre = len([f for f in p["filas"] if f.get('Nombre') == nombre_a_eliminar])
+                        if st.button(f"🗑️ Borrar {num_filas_nombre} filas de '{nombre_a_eliminar}'", use_container_width=True):
+                            p["filas"] = [f for f in p["filas"] if f.get('Nombre') != nombre_a_eliminar]
+                            ok, msg = borrar_en_github('ubicacion', nombre_a_eliminar, st.session_state.proyecto_activo)
+                            if ok: st.success(f"✅ {msg}")
+                            else: st.warning(f"⚠️ Borrado localmente, pero: {msg}")
+                            st.rerun()
+                else:
+                    st.write("No hay nombres registrados")
+            else:
+                st.write("No hay filas para eliminar")
 
         st.divider()
         col_f1, col_f2 = st.columns(2)
@@ -311,8 +343,7 @@ with tab1:
         
         if p["filas"]:
             st.divider()
-            # CAMBIO: "UBICACIÓN" -> "NOMBRE"
-            st.markdown("####  RESUMEN POR NOMBRE")
+            st.markdown("#### 📍 RESUMEN POR NOMBRE")
             resumen = {}
             for i, f in enumerate(p["filas"]):
                 nom = f.get('Nombre', '') or '(sin nombre)'
@@ -323,13 +354,13 @@ with tab1:
 with tab2:
     if not p["filas"]: st.info("Sin datos")
     else:
-        st.markdown("###  TOTAL POR CONCEPTO")
+        st.markdown("### 📈 TOTAL POR CONCEPTO")
         totales_concepto = [sum(float(f.get(c, 0) or 0) * precios_list[i] for f in p["filas"]) for i, c in enumerate(conceptos_list)]
         fig = px.bar(x=conceptos_list, y=totales_concepto, labels={'x': 'Concepto', 'y': 'Total (€)'}, color=totales_concepto, color_continuous_scale='Blues')
         fig.update_layout(height=400, showlegend=False, xaxis_tickangle=-30, plot_bgcolor='white', paper_bgcolor='white')
         st.plotly_chart(fig, use_container_width=True)
         st.divider()
-        st.markdown("###  ESTADÍSTICAS")
+        st.markdown("### 📋 ESTADÍSTICAS")
         stats = []
         for i, c in enumerate(conceptos_list):
             cantidades = [float(f.get(c, 0) or 0) for f in p["filas"] if float(f.get(c, 0) or 0) > 0]
@@ -337,7 +368,7 @@ with tab2:
         st.dataframe(pd.DataFrame(stats), use_container_width=True, hide_index=True)
 
 with tab3:
-    tab_tel, tab_exc = st.tabs(["🤖 DESDE TELEGRAM", "📄 DESDE EXCEL"])
+    tab_tel, tab_exc = st.tabs([" DESDE TELEGRAM", "📄 DESDE EXCEL"])
     with tab_tel:
         st.info("Importar datos guardados por el bot de Telegram en GitHub")
         if not GITHUB_TOKEN: st.warning("⚠️ Configura GITHUB_TOKEN en Secrets")
@@ -402,7 +433,7 @@ with tab3:
             except Exception as e: st.error(f"Error al leer: {e}")
 
 with tab4:
-    st.markdown("### ️ CONCEPTOS Y PRECIOS")
+    st.markdown("### 🏷️ CONCEPTOS Y PRECIOS")
     col1, col2 = st.columns(2)
     p["empresa"] = col1.text_input("EMPRESA:", p["empresa"]); p["fecha"] = col2.text_input("FECHA/MES:", p["fecha"])
     st.divider()
@@ -410,11 +441,11 @@ with tab4:
     edited = st.data_editor(p["conceptos"], num_rows="dynamic", use_container_width=True, column_config={"Concepto": st.column_config.TextColumn(width="large"), "Precio": st.column_config.NumberColumn(format="%.2f", min_value=0.0, step=0.5)})
     p["conceptos"] = edited.reset_index(drop=True)
     
-    if st.button(" APLICAR CAMBIOS Y SINCRONIZAR CON EL BOT", use_container_width=True, type="primary"):
+    if st.button("🔄 APLICAR CAMBIOS Y SINCRONIZAR CON EL BOT", use_container_width=True, type="primary"):
         p["filas"] = adaptar_filas(p["filas"], obtener_conceptos_validos(p))
         ok, msg = sincronizar_config_bot(st.session_state.proyecto_activo, conceptos_list, precios_list)
         if ok: st.success(f"✅ Conceptos actualizados localmente. {msg}")
-        else: st.warning(f"⚠️ Conceptos actualizados localmente, pero: {msg}")
+        else: st.warning(f"️ Conceptos actualizados localmente, pero: {msg}")
         st.rerun()
     
     st.divider()
@@ -461,5 +492,5 @@ with tab4:
         ws.column_dimensions['A'].width = 12; ws.column_dimensions['B'].width = 20
         for i in range(3, num_cols + 1): ws.column_dimensions[get_column_letter(i)].width = 18
         buffer = io.BytesIO(); wb.save(buffer); buffer.seek(0)
-        st.download_button(" DESCARGAR EXCEL", buffer, f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        st.download_button("📥 DESCARGAR EXCEL", buffer, f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
         st.success("✅ Excel generado correctamente")
