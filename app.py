@@ -22,7 +22,7 @@ GITHUB_USUARIO = "jaxma77-cell"
 GITHUB_REPO = "certificaciones-fibra"
 GITHUB_ARCHIVO_BOT = "datos_bot.json"
 
-# --- DATOS INICIALES ---
+# --- DATOS INICIALES (basados en tu Excel real) ---
 if 'proyectos' not in st.session_state:
     st.session_state.proyectos = {
         "FIBRAMOL JUNIO Y JULIO": {
@@ -43,7 +43,7 @@ if 'proyectos' not in st.session_state:
             "conceptos": pd.DataFrame({
                 'Concepto': ['Preparación Extremo de Cable', 'Preparación Sangrado',
                            'Instalación Caja de Empalme, CTO', 'Instalación de Spliter',
-                           'Empalme a Fusión hasta 24fo', 'Medida de potencia'],
+                           'Empalme a Fusión hasta 24fo', 'Medida de potencia de 1 fibra en 2a y 3a ventana'],
                 'Precio': [18.00, 36.00, 12.00, 3.10, 7.00, 2.50]
             }),
             "filas": []
@@ -54,7 +54,7 @@ if 'proyectos' not in st.session_state:
 if 'pie_pagina' not in st.session_state:
     st.session_state.pie_pagina = "F'BERED INGENIERIA EN REDES DE FIBRA"
 
-# --- FUNCIONES ---
+# --- FUNCIONES AUXILIARES ---
 def obtener_conceptos_validos(proyecto):
     df = proyecto["conceptos"]
     return df[df['Concepto'].notna() & (df['Concepto'].astype(str).str.strip() != '')].reset_index(drop=True)
@@ -73,19 +73,12 @@ def calcular_totales(filas, conceptos_list, precios_list):
 def formato_euro(valor):
     return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# --- NUEVA FUNCIÓN: BORRAR FILAS EN GITHUB ---
-def borrar_filas_en_github(tipo, valor, nombre_proyecto):
-    """
-    Borra filas del archivo datos_bot.json en GitHub
-    tipo: 'dia' o 'ubicacion'
-    valor: el valor del día o ubicación a borrar
-    nombre_proyecto: nombre del proyecto en el bot
-    """
+# --- FUNCIÓN BORRAR EN GITHUB (CORREGIDA) ---
+def borrar_en_github(tipo, valor, nombre_proyecto):
     if not GITHUB_TOKEN:
-        return False, "No hay token de GitHub configurado"
+        return False, "No hay token de GitHub"
     
     try:
-        # 1. Leer archivo actual
         url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_BOT}"
         headers = {"Authorization": f"token {GITHUB_TOKEN}"}
         r = requests.get(url, headers=headers)
@@ -97,34 +90,32 @@ def borrar_filas_en_github(tipo, valor, nombre_proyecto):
         sha = r.json()["sha"]
         datos = json.loads(contenido)
         
-        # 2. Filtrar filas del proyecto
         if nombre_proyecto not in datos:
-            return False, f"El proyecto '{nombre_proyecto}' no existe en GitHub"
+            return False, f"Proyecto '{nombre_proyecto}' no existe en GitHub. Proyectos: {list(datos.keys())}"
         
         filas_originales = datos[nombre_proyecto].get("filas", [])
         
-        # Filtrar: mantener solo las que NO coincidan con el criterio de borrado
         if tipo == 'dia':
             filas_filtradas = [f for f in filas_originales if f.get('Dia') != valor]
+            campo = 'Día'
         elif tipo == 'ubicacion':
             filas_filtradas = [f for f in filas_originales if f.get('Nombre') != valor]
+            campo = 'Ubicación'
         else:
-            return False, "Tipo de borrado no válido"
+            return False, "Tipo no válido"
         
         num_borradas = len(filas_originales) - len(filas_filtradas)
         
         if num_borradas == 0:
-            return False, "No se encontraron filas para borrar en GitHub"
+            return False, f"No se encontraron filas con {campo}='{valor}'"
         
-        # 3. Actualizar datos
         datos[nombre_proyecto]["filas"] = filas_filtradas
         
-        # 4. Guardar en GitHub
         contenido_nuevo = json.dumps(datos, indent=2, ensure_ascii=False)
         contenido_b64 = base64.b64encode(contenido_nuevo.encode("utf-8")).decode("utf-8")
         
         payload = {
-            "message": f"Borrado {num_borradas} filas por {tipo}: {valor}",
+            "message": f"Borrado {num_borradas} filas por {campo}: {valor}",
             "content": contenido_b64,
             "sha": sha
         }
@@ -132,9 +123,9 @@ def borrar_filas_en_github(tipo, valor, nombre_proyecto):
         r = requests.put(url, headers=headers, json=payload)
         
         if r.status_code in (200, 201):
-            return True, f"✅ Borradas {num_borradas} filas de GitHub"
+            return True, f"Borradas {num_borradas} filas de GitHub"
         else:
-            return False, f"Error al guardar en GitHub: {r.status_code}"
+            return False, f"Error al guardar: {r.status_code}"
             
     except Exception as e:
         return False, f"Error: {str(e)}"
@@ -230,7 +221,7 @@ col4.metric("📊 MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas
 st.divider()
 
 # --- PESTAÑAS ---
-tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", " ANÁLISIS", "📥 IMPORTAR", "⚙️ CONFIGURACIÓN"])
+tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", "📊 ANÁLISIS", "📥 IMPORTAR", "️ CONFIGURACIÓN"])
 
 with tab1:
     if not conceptos_list:
@@ -238,10 +229,10 @@ with tab1:
     else:
         # Botones principales
         c1, c2, c3 = st.columns(3)
-        if c1.button("➕ AÑADIR FILA", use_container_width=True):
+        if c1.button(" AÑADIR FILA", use_container_width=True):
             p["filas"].append({'Dia': '', 'Nombre': '', **{c: 0 for c in conceptos_list}})
             st.rerun()
-        if c2.button(" DUPLICAR ÚLTIMA", use_container_width=True, disabled=not p["filas"]):
+        if c2.button("📋 DUPLICAR ÚLTIMA", use_container_width=True, disabled=not p["filas"]):
             if p["filas"]:
                 copia = p["filas"][-1].copy()
                 copia['Nombre'] = ''
@@ -253,10 +244,10 @@ with tab1:
         
         st.divider()
         
-        # 🚨 FUNCIÓN MEJORADA: ELIMINAR POR DÍA O UBICACIÓN (CON SINCRONIZACIÓN GITHUB)
-        with st.expander("🗑️ ELIMINAR REGISTROS (Sincronizado con GitHub)", expanded=False):
+        # ELIMINAR POR DÍA O UBICACIÓN (CON SINCRONIZACIÓN GITHUB)
+        with st.expander("️ ELIMINAR REGISTROS (Sincronizado con GitHub)", expanded=False):
             st.markdown("⚠️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
-            st.markdown("Selecciona un **Día** o una **Ubicación (Nombre)** para borrar todos sus registros.")
+            st.caption(f"📌 Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
             
             col_elim1, col_elim2 = st.columns(2)
             
@@ -268,45 +259,39 @@ with tab1:
                         if dia_a_eliminar:
                             num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
                             if st.button(f"🗑️ Borrar {num_filas_dia} filas de '{dia_a_eliminar}'", use_container_width=True, type="secondary"):
-                                # 1. Borrar de la memoria local
+                                # Borrar local
                                 p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
-                                
-                                # 2. Borrar de GitHub
-                                ok, msg = borrar_filas_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
-                                
+                                # Borrar en GitHub
+                                ok, msg = borrar_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
                                 if ok:
                                     st.success(f"✅ {msg}")
                                 else:
                                     st.warning(f"⚠️ Borrado localmente, pero: {msg}")
-                                
                                 st.rerun()
             
             with col_elim2:
                 if p["filas"]:
                     ubicaciones = sorted(set(f.get('Nombre', '') for f in p["filas"] if f.get('Nombre')))
                     if ubicaciones:
-                        ubic_a_eliminar = st.selectbox("📍 Eliminar ubicación:", [""] + ubicaciones, key="sel_elim_ubic")
+                        ubic_a_eliminar = st.selectbox(" Eliminar ubicación:", [""] + ubicaciones, key="sel_elim_ubic")
                         if ubic_a_eliminar:
                             num_filas_ubic = len([f for f in p["filas"] if f.get('Nombre') == ubic_a_eliminar])
-                            if st.button(f"️ Borrar {num_filas_ubic} filas de '{ubic_a_eliminar}'", use_container_width=True, type="secondary"):
-                                # 1. Borrar de la memoria local
+                            if st.button(f"🗑️ Borrar {num_filas_ubic} filas de '{ubic_a_eliminar}'", use_container_width=True, type="secondary"):
+                                # Borrar local
                                 p["filas"] = [f for f in p["filas"] if f.get('Nombre') != ubic_a_eliminar]
-                                
-                                # 2. Borrar de GitHub
-                                ok, msg = borrar_filas_en_github('ubicacion', ubic_a_eliminar, st.session_state.proyecto_activo)
-                                
+                                # Borrar en GitHub
+                                ok, msg = borrar_en_github('ubicacion', ubic_a_eliminar, st.session_state.proyecto_activo)
                                 if ok:
                                     st.success(f"✅ {msg}")
                                 else:
-                                    st.warning(f"⚠️ Borrado localmente, pero: {msg}")
-                                
+                                    st.warning(f"️ Borrado localmente, pero: {msg}")
                                 st.rerun()
 
         st.divider()
         
-        # Filtros de visualización
+        # Filtros
         col_f1, col_f2 = st.columns(2)
-        filtro_nombre = col_f1.text_input(" BUSCAR:", placeholder="ALT-CE07")
+        filtro_nombre = col_f1.text_input("🔍 BUSCAR:", placeholder="ALT-CE07")
         dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
         filtro_dia = col_f2.selectbox("📅 FILTRAR POR DÍA:", ["TODOS"] + dias)
         
@@ -518,7 +503,7 @@ with tab4:
                           f"config_{st.session_state.proyecto_activo.replace(' ', '_')}.json", use_container_width=True)
     
     with col_b:
-        uploaded = st.file_uploader("️ CARGAR CONFIG (.json)", type=["json"])
+        uploaded = st.file_uploader("⬆️ CARGAR CONFIG (.json)", type=["json"])
         if uploaded:
             try:
                 data = json.load(uploaded)
@@ -534,7 +519,7 @@ with tab4:
     st.divider()
     st.markdown("### 📤 EXPORTAR A EXCEL")
     
-    if st.button("🚀 GENERAR EXCEL", type="primary", use_container_width=True, disabled=not p["filas"]):
+    if st.button(" GENERAR EXCEL", type="primary", use_container_width=True, disabled=not p["filas"]):
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = st.session_state.proyecto_activo[:31]
