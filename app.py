@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import openpyxl
@@ -143,39 +142,42 @@ if modo_oscuro:
         </style>
     """, unsafe_allow_html=True)
 else:
-    # MODO CLARO MEJORADO
+    # MODO CLARO MEJORADO - MÉTRICAS BIEN VISIBLES
     st.markdown("""
         <style>
         .stApp {
-            background-color: #f8f9fa;
+            background-color: #f0f2f6;
             color: #212529;
         }
         
-        /* Mejorar las tarjetas de métricas */
+        /* Métricas MUY visibles en modo claro */
         .stMetric {
-            background-color: #ffffff;
-            border: 2px solid #e9ecef;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
             transition: all 0.3s ease;
         }
         .stMetric:hover {
-            box-shadow: 0 6px 12px rgba(0,0,0,0.12);
-            transform: translateY(-2px);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
+            transform: translateY(-3px);
         }
         .stMetricLabel {
-            color: #495057 !important;
+            color: #ffffff !important;
             font-weight: 600 !important;
-            font-size: 14px !important;
+            font-size: 15px !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .stMetricValue {
-            color: #0d6efd !important;
-            font-weight: 700 !important;
-            font-size: 28px !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+            font-size: 32px !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         
-        /* Mejorar la barra lateral */
+        /* Barra lateral */
         div[data-testid="stSidebar"] {
             background-color: #ffffff;
             border-right: 2px solid #e9ecef;
@@ -186,7 +188,7 @@ else:
             color: #212529 !important;
         }
         
-        /* Mejorar las pestañas */
+        /* Pestañas */
         .stTabs [data-baseweb="tab-list"] {
             gap: 8px;
         }
@@ -204,7 +206,7 @@ else:
             border-color: #0d6efd !important;
         }
         
-        /* Mejorar los botones */
+        /* Botones */
         .stButton>button {
             background-color: #0d6efd;
             color: #ffffff;
@@ -225,33 +227,33 @@ else:
             background-color: #157347;
         }
         
-        /* Mejorar las tablas */
+        /* Tablas */
         .stDataFrame {
             border: 2px solid #e9ecef;
             border-radius: 8px;
             overflow: hidden;
         }
         
-        /* Mejorar los títulos */
+        /* Títulos */
         h1, h2, h3, h4 {
             color: #212529 !important;
             font-weight: 700 !important;
         }
         
-        /* Mejorar los contenedores de información */
+        /* Alertas */
         .stAlert {
             border-radius: 8px;
             border: 2px solid;
         }
         
-        /* Mejorar los selectores */
+        /* Selectores */
         .stSelectbox > div > div {
             background-color: #ffffff;
             border: 2px solid #e9ecef;
             border-radius: 8px;
         }
         
-        /* Mejorar los inputs de texto */
+        /* Inputs de texto */
         .stTextInput > div > div > input {
             background-color: #ffffff;
             border: 2px solid #e9ecef;
@@ -342,12 +344,12 @@ p["totales"] = totales_fila
 p["total_general"] = total_general
 
 # --- ENCABEZADO CON DASHBOARD ---
-st.title(f"🛠️ {st.session_state.proyecto_activo}")
+st.title(f"️ {st.session_state.proyecto_activo}")
 st.caption(f"**{p['empresa']}** · {p['fecha']}")
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric("💰 Total General", formato_euro(total_general))
+    st.metric(" Total General", formato_euro(total_general))
 with col2:
     st.metric("📋 Filas", len(p["filas"]))
 with col3:
@@ -618,7 +620,7 @@ with tab3:
 
 # --- PESTAÑA 4: CONFIGURACIÓN ---
 with tab4:
-    tab_conceptos, tab_exportar, tab_precios = st.tabs(["🏷️ Conceptos y Precios", "📤 Exportar Excel", "💾 Guardar/Cargar"])
+    tab_conceptos, tab_exportar, tab_precios = st.tabs(["️ Conceptos y Precios", " Exportar Excel", "💾 Guardar/Cargar"])
     
     with tab_conceptos:
         st.markdown(f"### 📋 Proyecto: {st.session_state.proyecto_activo}")
@@ -713,7 +715,7 @@ with tab4:
                 st.success("✅ ¡Excel generado correctamente!")
     
     with tab_precios:
-        st.markdown("### 💾 Guardar y Cargar configuración")
+        st.markdown("###  Guardar y Cargar configuración")
         col_save, col_load = st.columns(2)
         with col_save:
             config_data = {"proyecto": st.session_state.proyecto_activo, "empresa": p["empresa"], 
