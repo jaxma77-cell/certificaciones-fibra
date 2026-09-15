@@ -8,10 +8,11 @@ import json
 import requests
 import base64
 import os
+import plotly.express as px
 
 st.set_page_config(page_title="Certificaciones Fibra", layout="wide", page_icon="🛠️")
 
-# --- CONFIGURACIÓN ---
+# --- CONFIGURACIÓN GITHUB ---
 try:
     GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
 except:
@@ -19,6 +20,7 @@ except:
 
 GITHUB_USUARIO = "jaxma77-cell"
 GITHUB_REPO = "certificaciones-fibra"
+GITHUB_ARCHIVO_BOT = "datos_bot.json"
 
 # --- DATOS INICIALES ---
 if 'proyectos' not in st.session_state:
@@ -34,72 +36,65 @@ if 'proyectos' not in st.session_state:
                 'Precio': [12.50, 25.00, 8.00, 3.00, 5.00, 2.50, 2.00]
             }),
             "filas": []
+        },
+        "Santomera Mayo 2024": {
+            "empresa": "Fibranet Tecnologia y Sistemas SLU",
+            "fecha": "May-24",
+            "conceptos": pd.DataFrame({
+                'Concepto': ['Preparación Extremo de Cable', 'Preparación Sangrado',
+                           'Instalación Caja de Empalme, CTO', 'Instalación de Spliter',
+                           'Empalme a Fusión hasta 24fo', 'Medida de potencia'],
+                'Precio': [18.00, 36.00, 12.00, 3.10, 7.00, 2.50]
+            }),
+            "filas": []
         }
     }
     st.session_state.proyecto_activo = "FIBRAMOL JUNIO Y JULIO"
 
-# --- CSS PARA QUE TODO SE VEA ---
+if 'pie_pagina' not in st.session_state:
+    st.session_state.pie_pagina = "F'BERED INGENIERIA EN REDES DE FIBRA"
+
+# --- FUNCIONES ---
+def obtener_conceptos_validos(proyecto):
+    df = proyecto["conceptos"]
+    return df[df['Concepto'].notna() & (df['Concepto'].astype(str).str.strip() != '')].reset_index(drop=True)
+
+def adaptar_filas(filas, conceptos_validos):
+    conceptos_list = conceptos_validos['Concepto'].tolist()
+    return [{'Dia': f.get('Dia', ''), 'Nombre': f.get('Nombre', ''), **{c: f.get(c, 0) for c in conceptos_list}} for f in filas]
+
+def calcular_totales(filas, conceptos_list, precios_list):
+    totales = []
+    for fila in filas:
+        total = sum(float(fila.get(c, 0) or 0) * precios_list[i] for i, c in enumerate(conceptos_list))
+        totales.append(total)
+    return totales
+
+def formato_euro(valor):
+    return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
+
+# --- CSS VISIBILIDAD TOTAL ---
 st.markdown("""
 <style>
-/* Fondo principal BLANCO */
 .stApp { background-color: #ffffff !important; }
-
-/* Texto NEGRO en todas partes */
 .stApp * { color: #000000 !important; }
-
-/* Métricas con fondo GRIS y texto NEGRO */
-.stMetric { 
-    background-color: #f0f0f0 !important; 
-    border: 2px solid #cccccc !important;
-    border-radius: 8px !important;
-    padding: 15px !important;
-}
+.stMetric { background-color: #f0f0f0 !important; border: 2px solid #cccccc !important; border-radius: 8px !important; padding: 15px !important; }
 .stMetric label { color: #000000 !important; font-weight: bold !important; }
 .stMetric div[data-testid="stMetricValue"] { color: #000000 !important; font-weight: bold !important; font-size: 24px !important; }
-
-/* Sidebar gris claro */
 section[data-testid="stSidebar"] { background-color: #f5f5f5 !important; }
 section[data-testid="stSidebar"] * { color: #000000 !important; }
-
-/* Botones azules con texto blanco */
-.stButton button { 
-    background-color: #0066cc !important; 
-    color: #ffffff !important;
-    border: none !important;
-    font-weight: bold !important;
-}
-
-/* Tabs visibles */
-.stTabs [data-baseweb="tab"] { 
-    background-color: #e0e0e0 !important;
-    color: #000000 !important;
-    font-weight: bold !important;
-}
-.stTabs [aria-selected="true"] { 
-    background-color: #ffffff !important;
-    border-top: 3px solid #0066cc !important;
-}
-
-/* Inputs y selectores */
-input, select { 
-    background-color: #ffffff !important; 
-    color: #000000 !important;
-    border: 1px solid #999999 !important;
-}
-
-/* Tablas */
-div[data-testid="stDataFrame"] { 
-    background-color: #ffffff !important;
-    border: 1px solid #cccccc !important;
-}
+.stButton button { background-color: #0066cc !important; color: #ffffff !important; border: none !important; font-weight: bold !important; }
+.stTabs [data-baseweb="tab"] { background-color: #e0e0e0 !important; color: #000000 !important; font-weight: bold !important; }
+.stTabs [aria-selected="true"] { background-color: #ffffff !important; border-top: 3px solid #0066cc !important; }
+input, select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #999999 !important; }
+div[data-testid="stDataFrame"] { background-color: #ffffff !important; border: 1px solid #cccccc !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # --- BARRA LATERAL ---
 with st.sidebar:
-    st.header(" PROYECTOS", divider=True)
+    st.header("📁 PROYECTOS", divider=True)
     
-    # Selector de proyecto
     proyecto_seleccionado = st.selectbox(
         "Selecciona proyecto:",
         options=list(st.session_state.proyectos.keys()),
@@ -109,24 +104,22 @@ with st.sidebar:
     
     st.divider()
     
-    # Botones de gestión
     if st.button("➕ Nuevo Proyecto", use_container_width=True):
-        nombre = st.text_input("Nombre del proyecto:", "Nuevo Proyecto")
+        nombre = st.text_input("Nombre:", "Nuevo Proyecto")
         if nombre and nombre not in st.session_state.proyectos:
             st.session_state.proyectos[nombre] = {
-                "empresa": "",
-                "fecha": "",
+                "empresa": "", "fecha": "",
                 "conceptos": pd.DataFrame({"Concepto": [""], "Precio": [0.0]}),
                 "filas": []
             }
             st.session_state.proyecto_activo = nombre
             st.rerun()
     
-    if st.button("✏️ Renombrar", use_container_width=True):
-        nuevo_nombre = st.text_input("Nuevo nombre:", st.session_state.proyecto_activo)
-        if nuevo_nombre and nuevo_nombre != st.session_state.proyecto_activo:
-            st.session_state.proyectos[nuevo_nombre] = st.session_state.proyectos.pop(st.session_state.proyecto_activo)
-            st.session_state.proyecto_activo = nuevo_nombre
+    if st.button("️ Renombrar", use_container_width=True):
+        nuevo = st.text_input("Nuevo nombre:", st.session_state.proyecto_activo)
+        if nuevo and nuevo != st.session_state.proyecto_activo and nuevo not in st.session_state.proyectos:
+            st.session_state.proyectos[nuevo] = st.session_state.proyectos.pop(st.session_state.proyecto_activo)
+            st.session_state.proyecto_activo = nuevo
             st.rerun()
     
     if st.button("🗑️ Eliminar", use_container_width=True):
@@ -139,195 +132,287 @@ with st.sidebar:
     
     st.divider()
     st.subheader("⚙️ Configuración")
-    pie_pagina = st.text_input("Pie de página:", "F'BERED INGENIERIA EN REDES DE FIBRA")
+    st.session_state.pie_pagina = st.text_input("Pie de página:", st.session_state.pie_pagina)
 
 # --- PROYECTO ACTIVO ---
 p = st.session_state.proyectos[st.session_state.proyecto_activo]
-conceptos = p["conceptos"][p["conceptos"]["Concepto"].str.strip() != ""]
-conceptos_list = conceptos["Concepto"].tolist()
-precios_list = conceptos["Precio"].tolist()
+conceptos_validos = obtener_conceptos_validos(p)
+conceptos_list = conceptos_validos['Concepto'].tolist()
+precios_list = conceptos_validos['Precio'].tolist()
 
-# --- TÍTULO PRINCIPAL ---
-st.title(f"️ {st.session_state.proyecto_activo}")
+if p["filas"]:
+    p["filas"] = adaptar_filas(p["filas"], conceptos_validos)
+
+totales = calcular_totales(p["filas"], conceptos_list, precios_list)
+total_general = sum(totales) if totales else 0
+p["totales"] = totales
+p["total_general"] = total_general
+
+# --- TÍTULO ---
+st.title(f"🛠️ {st.session_state.proyecto_activo}")
 st.caption(f"**{p['empresa']}** · {p['fecha']}")
 
 st.divider()
 
 # --- MÉTRICAS ---
-total_general = sum(f.get("total", 0) for f in p["filas"]) if p["filas"] else 0
 col1, col2, col3, col4 = st.columns(4)
-col1.metric(" TOTAL", f"{total_general:,.2f} €")
-col2.metric("📋 FILAS", len(p["filas"]))
+col1.metric("💰 TOTAL", formato_euro(total_general))
+col2.metric(" FILAS", len(p["filas"]))
 col3.metric("🏷️ CONCEPTOS", len(conceptos_list))
-col4.metric(" MEDIA", f"{total_general/len(p['filas']) if p['filas'] else 0:,.2f} €")
+col4.metric("📊 MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas"] else 0))
 
 st.divider()
 
-# --- PESTAÑAS ---
-tab1, tab2, tab3 = st.tabs(["📝 REGISTRO", " ANÁLISIS", "⚙️ CONFIGURACIÓN"])
+# --- PESTAÑAS COMPLETAS ---
+tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", "📊 ANÁLISIS", " IMPORTAR", "⚙️ CONFIGURACIÓN"])
 
 with tab1:
     if not conceptos_list:
-        st.error(" No hay conceptos definidos. Ve a CONFIGURACIÓN para añadirlos.")
+        st.error("❌ Añade conceptos en CONFIGURACIÓN")
     else:
-        # Botones de acción
         c1, c2, c3 = st.columns(3)
-        if c1.button("➕ AÑADIR FILA", use_container_width=True):
-            nueva_fila = {"Dia": "", "Nombre": ""}
-            for c in conceptos_list:
-                nueva_fila[c] = 0
-            p["filas"].append(nueva_fila)
+        if c1.button("➕ AÑADIR", use_container_width=True):
+            p["filas"].append({'Dia': '', 'Nombre': '', **{c: 0 for c in conceptos_list}})
             st.rerun()
-        
-        if c2.button("📋 DUPLICAR ÚLTIMA", use_container_width=True, disabled=not p["filas"]):
+        if c2.button("📋 DUPLICAR", use_container_width=True, disabled=not p["filas"]):
             if p["filas"]:
                 copia = p["filas"][-1].copy()
-                copia["Nombre"] = ""
+                copia['Nombre'] = ''
                 p["filas"].append(copia)
                 st.rerun()
-        
         if c3.button("🗑️ BORRAR TODO", use_container_width=True):
             p["filas"] = []
             st.rerun()
         
         st.divider()
         
-        # Filtros
         col_f1, col_f2 = st.columns(2)
-        filtro_buscar = col_f1.text_input("🔍 Buscar por nombre:", placeholder="Ej: ALT-CE07")
-        dias_disponibles = sorted(set(f.get("Dia", "") for f in p["filas"] if f.get("Dia")))
-        filtro_dia = col_f2.selectbox("Filtrar por día:", ["TODOS"] + dias_disponibles)
+        filtro_nombre = col_f1.text_input("🔍 BUSCAR:", placeholder="ALT-CE07")
+        dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
+        filtro_dia = col_f2.selectbox("DÍA:", ["TODOS"] + dias)
         
-        # Aplicar filtros
-        filas_filtradas = p["filas"]
-        if filtro_buscar:
-            filas_filtradas = [f for f in filas_filtradas if filtro_buscar.upper() in str(f.get("Nombre", "")).upper()]
+        filas_vistas = p["filas"]
+        if filtro_nombre:
+            filas_vistas = [f for f in filas_vistas if filtro_nombre.upper() in str(f.get('Nombre', '')).upper()]
         if filtro_dia != "TODOS":
-            filas_filtradas = [f for f in filas_filtradas if f.get("Dia") == filtro_dia]
+            filas_vistas = [f for f in filas_vistas if f.get('Dia') == filtro_dia]
         
-        st.caption(f"Mostrando {len(filas_filtradas)} de {len(p['filas'])} filas")
+        st.caption(f"Viendo {len(filas_vistas)} de {len(p['filas'])} filas")
         
         if p["filas"]:
-            # Crear DataFrame editable
-            df = pd.DataFrame(filas_filtradas)
+            df = pd.DataFrame(filas_vistas)
             for c in conceptos_list:
                 if c not in df.columns:
                     df[c] = 0
-            df = df[["Dia", "Nombre"] + conceptos_list]
+            df = df[['Dia', 'Nombre'] + conceptos_list]
             
-            # Configurar columnas
-            column_config = {
-                "Dia": st.column_config.TextColumn("DÍA", width="small"),
-                "Nombre": st.column_config.TextColumn("NOMBRE", width="medium")
-            }
+            col_config = {"Dia": st.column_config.TextColumn("DÍA", width="small"), "Nombre": st.column_config.TextColumn("NOMBRE")}
             for c in conceptos_list:
-                column_config[c] = st.column_config.NumberColumn(c, min_value=0, step=1)
+                col_config[c] = st.column_config.NumberColumn(c, min_value=0, step=1)
             
-            # Formulario de edición
-            with st.form("formulario_edicion"):
-                df_editado = st.data_editor(df, num_rows="dynamic", column_config=column_config, 
-                                          hide_index=True, use_container_width=True)
-                
-                if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
-                    nuevas_filas = df_editado.fillna(0).to_dict('records')
-                    
-                    # Calcular totales
-                    for fila in nuevas_filas:
+            with st.form("editar"):
+                df_edit = st.data_editor(df, num_rows="dynamic", column_config=col_config, hide_index=True, use_container_width=True)
+                if st.form_submit_button("💾 GUARDAR", use_container_width=True, type="primary"):
+                    nuevas = df_edit.fillna(0).to_dict('records')
+                    for fila in nuevas:
                         total = sum(float(fila.get(c, 0)) * precios_list[i] for i, c in enumerate(conceptos_list))
                         fila["total"] = total
                     
-                    if filtro_buscar or filtro_dia != "TODOS":
-                        no_filtradas = [f for f in p["filas"] if f not in filas_filtradas]
-                        p["filas"] = no_filtradas + nuevas_filas
+                    if filtro_nombre or filtro_dia != "TODOS":
+                        no_filtradas = [f for f in p["filas"] if f not in filas_vistas]
+                        p["filas"] = no_filtradas + nuevas
                     else:
-                        p["filas"] = nuevas_filas
-                    
-                    st.success(f"✅ {len(nuevas_filas)} filas guardadas correctamente")
+                        p["filas"] = nuevas
+                    st.success(f"✅ {len(nuevas)} filas guardadas")
                     st.rerun()
         
-        # Resumen por ubicación
         if p["filas"]:
             st.divider()
-            st.subheader("📍 RESUMEN POR UBICACIÓN")
+            st.markdown("#### 📍 POR UBICACIÓN")
             resumen = {}
-            for fila in p["filas"]:
-                nombre = fila.get("Nombre", "") or "(sin nombre)"
-                if nombre not in resumen:
-                    resumen[nombre] = {"filas": 0, "total": 0}
-                resumen[nombre]["filas"] += 1
-                resumen[nombre]["total"] += fila.get("total", 0)
+            for i, f in enumerate(p["filas"]):
+                nom = f.get('Nombre', '') or '(sin nombre)'
+                resumen[nom] = resumen.get(nom, {'filas': 0, 'total': 0})
+                resumen[nom]['filas'] += 1
+                resumen[nom]['total'] += totales[i]
             
-            df_resumen = pd.DataFrame([
-                {"Ubicación": nom, "Registros": d["filas"], "Total (€)": f"{d['total']:,.2f}"}
-                for nom, d in sorted(resumen.items(), key=lambda x: x[1]["total"], reverse=True)
-            ])
-            st.dataframe(df_resumen, use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame([
+                {'Nombre': n, 'Registros': d['filas'], 'Total': formato_euro(d['total'])}
+                for n, d in sorted(resumen.items(), key=lambda x: x[1]['total'], reverse=True)
+            ]), use_container_width=True, hide_index=True)
 
 with tab2:
     if not p["filas"]:
-        st.info(" No hay datos para analizar")
+        st.info("Sin datos")
     else:
-        st.subheader(" TOTAL POR CONCEPTO")
-        totales_concepto = []
-        for i, c in enumerate(conceptos_list):
-            total = sum(float(f.get(c, 0)) * precios_list[i] for f in p["filas"])
-            totales_concepto.append(total)
+        st.markdown("### 📈 POR CONCEPTO")
+        totales_concepto = [sum(float(f.get(c, 0) or 0) * precios_list[i] for f in p["filas"]) for i, c in enumerate(conceptos_list)]
         
-        df_grafico = pd.DataFrame({
-            "Concepto": conceptos_list,
-            "Total (€)": [f"{t:,.2f}" for t in totales_concepto]
-        })
-        st.bar_chart(df_grafico.set_index("Concepto"), use_container_width=True)
+        fig = px.bar(x=conceptos_list, y=totales_concepto, labels={'x': 'Concepto', 'y': 'Total (€)'}, color=totales_concepto, color_continuous_scale='Blues')
+        fig.update_layout(height=400, showlegend=False, xaxis_tickangle=-30, plot_bgcolor='white', paper_bgcolor='white')
+        st.plotly_chart(fig, use_container_width=True)
         
         st.divider()
-        st.subheader("📋 ESTADÍSTICAS")
-        st.dataframe(pd.DataFrame({
-            "Concepto": conceptos_list,
-            "Precio": [f"{p:,.2f} €" for p in precios_list],
-            "Total": [f"{t:,.2f} €" for t in totales_concepto]
-        }), use_container_width=True, hide_index=True)
+        st.markdown("### 📋 ESTADÍSTICAS")
+        stats = []
+        for i, c in enumerate(conceptos_list):
+            cantidades = [float(f.get(c, 0) or 0) for f in p["filas"] if float(f.get(c, 0) or 0) > 0]
+            stats.append({
+                'Concepto': c,
+                'Precio': formato_euro(precios_list[i]),
+                'Veces': len(cantidades),
+                'Unidades': int(sum(cantidades)),
+                'Total': formato_euro(totales_concepto[i])
+            })
+        st.dataframe(pd.DataFrame(stats), use_container_width=True, hide_index=True)
 
 with tab3:
-    st.subheader("🏷️ CONCEPTOS Y PRECIOS")
+    tab_tel, tab_exc = st.tabs(["🤖 TELEGRAM", "📄 EXCEL"])
     
-    # Datos de empresa
+    with tab_tel:
+        st.info("Importar datos del bot de Telegram")
+        if not GITHUB_TOKEN:
+            st.warning("️ Configura GITHUB_TOKEN en Secrets")
+        else:
+            if st.button(" LEER DATOS", use_container_width=True, type="primary"):
+                try:
+                    url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_BOT}"
+                    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+                    r = requests.get(url, headers=headers)
+                    if r.status_code == 200:
+                        contenido = base64.b64decode(r.json()["content"]).decode("utf-8")
+                        datos_bot = json.loads(contenido)
+                        st.success("✅ Datos leídos")
+                        
+                        if datos_bot:
+                            st.markdown("**Proyectos disponibles:**")
+                            for pn, dp in datos_bot.items():
+                                nf = len(dp.get("filas", []))
+                                tp = sum(f.get("total", 0) for f in dp.get("filas", []))
+                                st.markdown(f"- **{pn}**: {nf} filas → {formato_euro(tp)}")
+                            st.session_state.datos_bot = datos_bot
+                            st.rerun()
+                    elif r.status_code == 404:
+                        st.warning("⚠️ Archivo no existe. Envía datos al bot primero.")
+                except Exception as e:
+                    st.error(f"❌ Error: {e}")
+            
+            if 'datos_bot' in st.session_state and st.session_state.datos_bot:
+                st.divider()
+                proy_sel = st.selectbox("Proyecto a importar:", list(st.session_state.datos_bot.keys()))
+                filas_bot = st.session_state.datos_bot[proy_sel].get("filas", [])
+                
+                if filas_bot:
+                    st.markdown(f"**{len(filas_bot)} filas disponibles**")
+                    modo = st.radio("¿Cómo importar?", ["Añadir", "Reemplazar"], horizontal=True)
+                    
+                    if st.button("🚀 IMPORTAR", type="primary", use_container_width=True):
+                        nuevas = []
+                        for f in filas_bot:
+                            fila = {'Dia': '', 'Nombre': f['Nombre']}
+                            cantidades = f.get('cantidades', [])
+                            for i, c in enumerate(conceptos_list):
+                                fila[c] = cantidades[i] if i < len(cantidades) else 0
+                            nuevas.append(fila)
+                        
+                        if modo == "Añadir":
+                            p["filas"].extend(nuevas)
+                        else:
+                            p["filas"] = nuevas
+                        st.success(f"✅ {len(nuevas)} filas importadas")
+                        st.balloons()
+                        st.rerun()
+    
+    with tab_exc:
+        st.info("Importar desde Excel")
+        archivo = st.file_uploader("Selecciona archivo .xlsx", type=["xlsx"])
+        if archivo:
+            try:
+                wb = openpyxl.load_workbook(archivo)
+                ws = wb.active
+                
+                empresa = ws['A1'].value or ""
+                nombre_proy = ws['A2'].value or "Importado"
+                fecha = ws['A3'].value or ""
+                
+                conceptos_imp, precios_imp = [], []
+                col = 3
+                while ws.cell(row=4, column=col).value and str(ws.cell(row=4, column=col).value).strip().upper() != 'TOTAL':
+                    conceptos_imp.append(ws.cell(row=4, column=col).value)
+                    precios_imp.append(float(ws.cell(row=5, column=col).value or 0))
+                    col += 1
+                
+                filas_imp = []
+                row = 6
+                while ws.cell(row=row, column=1).value or ws.cell(row=row, column=2).value:
+                    fila = {'Dia': ws.cell(row=row, column=1).value or '', 'Nombre': ws.cell(row=row, column=2).value or ''}
+                    for i, c in enumerate(conceptos_imp):
+                        val = ws.cell(row=row, column=i+3).value
+                        fila[c] = int(float(val)) if val else 0
+                    filas_imp.append(fila)
+                    row += 1
+                
+                st.success(f"✅ Leído: {len(filas_imp)} filas")
+                
+                if st.button("💾 CARGAR COMO NUEVO PROYECTO", type="primary", use_container_width=True):
+                    nombre_nuevo = f"{nombre_proy} (importado)"
+                    st.session_state.proyectos[nombre_nuevo] = {
+                        "empresa": empresa, "fecha": str(fecha),
+                        "conceptos": pd.DataFrame({"Concepto": conceptos_imp, "Precio": precios_imp}),
+                        "filas": filas_imp
+                    }
+                    st.session_state.proyecto_activo = nombre_nuevo
+                    st.success("✅ Proyecto cargado")
+                    st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+with tab4:
+    st.markdown("### 🏷️ CONCEPTOS Y PRECIOS")
+    
     col1, col2 = st.columns(2)
-    p["empresa"] = col1.text_input("Empresa:", p["empresa"])
-    p["fecha"] = col2.text_input("Fecha/Mes:", p["fecha"])
+    p["empresa"] = col1.text_input("EMPRESA:", p["empresa"])
+    p["fecha"] = col2.text_input("FECHA/MES:", p["fecha"])
     
     st.divider()
-    st.write("**Edita los conceptos y precios:**")
+    st.write("**Edita conceptos y precios:**")
     
-    # Editor de conceptos
-    conceptos_editados = st.data_editor(
-        p["conceptos"],
-        num_rows="dynamic",
-        use_container_width=True,
-        column_config={
-            "Concepto": st.column_config.TextColumn("CONCEPTO", width="large"),
-            "Precio": st.column_config.NumberColumn("PRECIO (€)", format="%.2f", min_value=0.0, step=0.5)
-        }
-    )
-    p["conceptos"] = conceptos_editados
+    edited = st.data_editor(p["conceptos"], num_rows="dynamic", use_container_width=True,
+                           column_config={"Concepto": st.column_config.TextColumn(width="large"), 
+                                        "Precio": st.column_config.NumberColumn(format="%.2f", min_value=0.0, step=0.5)})
+    p["conceptos"] = edited.reset_index(drop=True)
     
-    if st.button("🔄 APLICAR CAMBIOS A LAS FILAS", use_container_width=True):
-        # Adaptar filas existentes a nuevos conceptos
-        nuevos_conceptos = conceptos_editados[conceptos_editados["Concepto"].str.strip() != ""]
-        nuevos_conceptos_list = nuevos_conceptos["Concepto"].tolist()
-        
-        nuevas_filas = []
-        for fila in p["filas"]:
-            nueva_fila = {"Dia": fila.get("Dia", ""), "Nombre": fila.get("Nombre", "")}
-            for c in nuevos_conceptos_list:
-                nueva_fila[c] = fila.get(c, 0)
-            nuevas_filas.append(nueva_fila)
-        
-        p["filas"] = nuevas_filas
-        st.success("✅ Conceptos actualizados correctamente")
+    if st.button("🔄 APLICAR CAMBIOS", use_container_width=True):
+        p["filas"] = adaptar_filas(p["filas"], obtener_conceptos_validos(p))
+        st.success("✅ Actualizado")
         st.rerun()
     
     st.divider()
-    st.subheader("📤 EXPORTAR A EXCEL")
+    st.markdown("### 💾 GUARDAR/CARGAR CONFIGURACIÓN")
+    
+    col_a, col_b = st.columns(2)
+    with col_a:
+        config_data = {"proyecto": st.session_state.proyecto_activo, "empresa": p["empresa"], 
+                      "fecha": p["fecha"], "conceptos": conceptos_validos.to_dict(orient="records")}
+        st.download_button("⬇️ DESCARGAR CONFIG", json.dumps(config_data, indent=2, ensure_ascii=False),
+                          f"config_{st.session_state.proyecto_activo.replace(' ', '_')}.json", use_container_width=True)
+    
+    with col_b:
+        uploaded = st.file_uploader("⬆️ CARGAR CONFIG (.json)", type=["json"])
+        if uploaded:
+            try:
+                data = json.load(uploaded)
+                p["empresa"] = data.get("empresa", p["empresa"])
+                p["fecha"] = data.get("fecha", p["fecha"])
+                p["conceptos"] = pd.DataFrame(data.get("conceptos", []))
+                p["filas"] = []
+                st.success("✅ Configuración cargada")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error: {e}")
+    
+    st.divider()
+    st.markdown("### 📤 EXPORTAR EXCEL")
     
     if st.button("🚀 GENERAR EXCEL", type="primary", use_container_width=True, disabled=not p["filas"]):
         wb = openpyxl.Workbook()
@@ -337,29 +422,21 @@ with tab3:
         num_cols = 2 + len(conceptos_list) + 1
         last_col = get_column_letter(num_cols)
         
-        # Encabezados
         for r in range(1, 4):
             ws.merge_cells(f'A{r}:{last_col}{r}')
         
-        ws['A1'] = p["empresa"]
-        ws['A1'].font = Font(bold=True, size=14)
+        ws['A1'], ws['A1'].font = p["empresa"], Font(bold=True, size=14)
         ws['A1'].alignment = Alignment(horizontal="center")
-        
-        ws['A2'] = st.session_state.proyecto_activo
-        ws['A2'].font = Font(bold=True, size=12)
+        ws['A2'], ws['A2'].font = st.session_state.proyecto_activo, Font(bold=True, size=12)
         ws['A2'].alignment = Alignment(horizontal="center")
-        
         ws['A3'] = p["fecha"]
         ws['A3'].alignment = Alignment(horizontal="center")
         
-        # Cabeceras de columna
-        ws['A4'] = 'DÍA'
-        ws['B4'] = 'NOMBRE'
+        ws['A4'], ws['B4'] = 'DÍA', 'NOMBRE'
         for i, c in enumerate(conceptos_list):
             ws.cell(row=4, column=i+3, value=c)
         ws.cell(row=4, column=num_cols, value='TOTAL')
         
-        # Estilo cabeceras
         header_font = Font(bold=True, color="FFFFFF")
         header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
         for col in range(1, num_cols + 1):
@@ -368,61 +445,46 @@ with tab3:
             cell.fill = header_fill
             cell.alignment = Alignment(horizontal="center")
         
-        # Precios
         for i, precio in enumerate(precios_list):
             cell = ws.cell(row=5, column=i+3, value=precio)
             cell.number_format = '#,##0.00 "€"'
             cell.alignment = Alignment(horizontal="center")
         
-        # Datos
         start_row = 6
-        for fila in p["filas"]:
+        for idx, fila in enumerate(p["filas"]):
             ws.cell(row=start_row, column=1, value=fila.get('Dia', ''))
             ws.cell(row=start_row, column=2, value=fila.get('Nombre', ''))
-            
             for i, c in enumerate(conceptos_list):
                 val = int(fila.get(c, 0)) if fila.get(c, 0) > 0 else ""
                 ws.cell(row=start_row, column=i+3, value=val)
-            
-            total_celda = ws.cell(row=start_row, column=num_cols, value=fila.get("total", 0))
-            total_celda.number_format = '#,##0.00 "€"'
-            total_celda.font = Font(bold=True)
-            
+            total_cell = ws.cell(row=start_row, column=num_cols, value=p["totales"][idx])
+            total_cell.number_format = '#,##0.00 "€"'
+            total_cell.font = Font(bold=True)
             start_row += 1
         
-        # Total general
         ws.merge_cells(f'A{start_row}:B{start_row}')
         ws.cell(row=start_row, column=1, value='TOTAL GENERAL')
         ws.cell(row=start_row, column=1).font = Font(bold=True, size=12)
         ws.cell(row=start_row, column=1).alignment = Alignment(horizontal="right")
+        gt = ws.cell(row=start_row, column=num_cols, value=total_general)
+        gt.number_format = '#,##0.00 "€"'
+        gt.font = Font(bold=True, size=12, color="FF0000")
         
-        total_general_celda = ws.cell(row=start_row, column=num_cols, value=total_general)
-        total_general_celda.number_format = '#,##0.00 "€"'
-        total_general_celda.font = Font(bold=True, size=12, color="FF0000")
-        
-        # Pie de página
         start_row += 2
         ws.merge_cells(f'A{start_row}:{last_col}{start_row}')
-        ws.cell(row=start_row, column=1, value=pie_pagina)
+        ws.cell(row=start_row, column=1, value=st.session_state.pie_pagina)
         ws.cell(row=start_row, column=1).font = Font(italic=True, size=10)
         ws.cell(row=start_row, column=1).alignment = Alignment(horizontal="center")
         
-        # Ajustar anchos
         ws.column_dimensions['A'].width = 12
         ws.column_dimensions['B'].width = 20
         for i in range(3, num_cols + 1):
             ws.column_dimensions[get_column_letter(i)].width = 18
         
-        # Descargar
         buffer = io.BytesIO()
         wb.save(buffer)
         buffer.seek(0)
         
-        st.download_button(
-            label="📥 DESCARGAR EXCEL",
-            data=buffer,
-            file_name=f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
-        st.success("✅ Excel generado correctamente")
+        st.download_button("📥 DESCARGAR", buffer, f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx",
+                          mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        st.success("✅ Excel generado")
