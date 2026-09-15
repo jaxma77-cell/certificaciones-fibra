@@ -115,14 +115,14 @@ with st.sidebar:
             st.session_state.proyecto_activo = nombre
             st.rerun()
     
-    if st.button("️ Renombrar", use_container_width=True):
+    if st.button("✏️ Renombrar", use_container_width=True):
         nuevo = st.text_input("Nuevo nombre:", st.session_state.proyecto_activo)
         if nuevo and nuevo != st.session_state.proyecto_activo and nuevo not in st.session_state.proyectos:
             st.session_state.proyectos[nuevo] = st.session_state.proyectos.pop(st.session_state.proyecto_activo)
             st.session_state.proyecto_activo = nuevo
             st.rerun()
     
-    if st.button("🗑️ Eliminar", use_container_width=True):
+    if st.button("🗑️ Eliminar Proyecto", use_container_width=True):
         if len(st.session_state.proyectos) > 1:
             del st.session_state.proyectos[st.session_state.proyecto_activo]
             st.session_state.proyecto_activo = list(st.session_state.proyectos.keys())[0]
@@ -157,24 +157,25 @@ st.divider()
 # --- MÉTRICAS ---
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("💰 TOTAL", formato_euro(total_general))
-col2.metric(" FILAS", len(p["filas"]))
-col3.metric("🏷️ CONCEPTOS", len(conceptos_list))
+col2.metric("📋 FILAS", len(p["filas"]))
+col3.metric("️ CONCEPTOS", len(conceptos_list))
 col4.metric("📊 MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas"] else 0))
 
 st.divider()
 
-# --- PESTAÑAS COMPLETAS ---
-tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", "📊 ANÁLISIS", " IMPORTAR", "⚙️ CONFIGURACIÓN"])
+# --- PESTAÑAS ---
+tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", "📊 ANÁLISIS", "📥 IMPORTAR", "⚙️ CONFIGURACIÓN"])
 
 with tab1:
     if not conceptos_list:
         st.error("❌ Añade conceptos en CONFIGURACIÓN")
     else:
+        # Botones principales
         c1, c2, c3 = st.columns(3)
-        if c1.button("➕ AÑADIR", use_container_width=True):
+        if c1.button("➕ AÑADIR FILA", use_container_width=True):
             p["filas"].append({'Dia': '', 'Nombre': '', **{c: 0 for c in conceptos_list}})
             st.rerun()
-        if c2.button("📋 DUPLICAR", use_container_width=True, disabled=not p["filas"]):
+        if c2.button("📋 DUPLICAR ÚLTIMA", use_container_width=True, disabled=not p["filas"]):
             if p["filas"]:
                 copia = p["filas"][-1].copy()
                 copia['Nombre'] = ''
@@ -186,10 +187,42 @@ with tab1:
         
         st.divider()
         
+        # 🚨 NUEVA FUNCIÓN: ELIMINAR POR DÍA O UBICACIÓN
+        with st.expander("🗑️ ELIMINAR REGISTROS ESPECÍFICOS (Por Día o Ubicación)", expanded=False):
+            st.markdown("Selecciona un **Día** o una **Ubicación (Nombre)** para borrar todos sus registros de golpe.")
+            col_elim1, col_elim2 = st.columns(2)
+            
+            with col_elim1:
+                if p["filas"]:
+                    dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
+                    if dias:
+                        dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
+                        if dia_a_eliminar:
+                            num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
+                            if st.button(f"🗑️ Borrar {num_filas_dia} filas de '{dia_a_eliminar}'", use_container_width=True, type="secondary"):
+                                p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
+                                st.success(f"✅ Eliminadas {num_filas_dia} filas de {dia_a_eliminar}")
+                                st.rerun()
+            
+            with col_elim2:
+                if p["filas"]:
+                    ubicaciones = sorted(set(f.get('Nombre', '') for f in p["filas"] if f.get('Nombre')))
+                    if ubicaciones:
+                        ubic_a_eliminar = st.selectbox("📍 Eliminar ubicación:", [""] + ubicaciones, key="sel_elim_ubic")
+                        if ubic_a_eliminar:
+                            num_filas_ubic = len([f for f in p["filas"] if f.get('Nombre') == ubic_a_eliminar])
+                            if st.button(f"🗑️ Borrar {num_filas_ubic} filas de '{ubic_a_eliminar}'", use_container_width=True, type="secondary"):
+                                p["filas"] = [f for f in p["filas"] if f.get('Nombre') != ubic_a_eliminar]
+                                st.success(f"✅ Eliminadas {num_filas_ubic} filas de {ubic_a_eliminar}")
+                                st.rerun()
+
+        st.divider()
+        
+        # Filtros de visualización
         col_f1, col_f2 = st.columns(2)
         filtro_nombre = col_f1.text_input("🔍 BUSCAR:", placeholder="ALT-CE07")
         dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
-        filtro_dia = col_f2.selectbox("DÍA:", ["TODOS"] + dias)
+        filtro_dia = col_f2.selectbox("📅 FILTRAR POR DÍA:", ["TODOS"] + dias)
         
         filas_vistas = p["filas"]
         if filtro_nombre:
@@ -212,7 +245,7 @@ with tab1:
             
             with st.form("editar"):
                 df_edit = st.data_editor(df, num_rows="dynamic", column_config=col_config, hide_index=True, use_container_width=True)
-                if st.form_submit_button("💾 GUARDAR", use_container_width=True, type="primary"):
+                if st.form_submit_button("💾 GUARDAR CAMBIOS", use_container_width=True, type="primary"):
                     nuevas = df_edit.fillna(0).to_dict('records')
                     for fila in nuevas:
                         total = sum(float(fila.get(c, 0)) * precios_list[i] for i, c in enumerate(conceptos_list))
@@ -226,9 +259,10 @@ with tab1:
                     st.success(f"✅ {len(nuevas)} filas guardadas")
                     st.rerun()
         
+        # Resumen por ubicación
         if p["filas"]:
             st.divider()
-            st.markdown("#### 📍 POR UBICACIÓN")
+            st.markdown("#### 📍 RESUMEN POR UBICACIÓN")
             resumen = {}
             for i, f in enumerate(p["filas"]):
                 nom = f.get('Nombre', '') or '(sin nombre)'
@@ -245,7 +279,7 @@ with tab2:
     if not p["filas"]:
         st.info("Sin datos")
     else:
-        st.markdown("### 📈 POR CONCEPTO")
+        st.markdown("### 📈 TOTAL POR CONCEPTO")
         totales_concepto = [sum(float(f.get(c, 0) or 0) * precios_list[i] for f in p["filas"]) for i, c in enumerate(conceptos_list)]
         
         fig = px.bar(x=conceptos_list, y=totales_concepto, labels={'x': 'Concepto', 'y': 'Total (€)'}, color=totales_concepto, color_continuous_scale='Blues')
@@ -253,28 +287,28 @@ with tab2:
         st.plotly_chart(fig, use_container_width=True)
         
         st.divider()
-        st.markdown("### 📋 ESTADÍSTICAS")
+        st.markdown("###  ESTADÍSTICAS")
         stats = []
         for i, c in enumerate(conceptos_list):
             cantidades = [float(f.get(c, 0) or 0) for f in p["filas"] if float(f.get(c, 0) or 0) > 0]
             stats.append({
                 'Concepto': c,
                 'Precio': formato_euro(precios_list[i]),
-                'Veces': len(cantidades),
-                'Unidades': int(sum(cantidades)),
+                'Veces usado': len(cantidades),
+                'Unidades tot.': int(sum(cantidades)),
                 'Total': formato_euro(totales_concepto[i])
             })
         st.dataframe(pd.DataFrame(stats), use_container_width=True, hide_index=True)
 
 with tab3:
-    tab_tel, tab_exc = st.tabs(["🤖 TELEGRAM", "📄 EXCEL"])
+    tab_tel, tab_exc = st.tabs(["🤖 DESDE TELEGRAM", "📄 DESDE EXCEL"])
     
     with tab_tel:
-        st.info("Importar datos del bot de Telegram")
+        st.info("Importar datos guardados por el bot de Telegram en GitHub")
         if not GITHUB_TOKEN:
-            st.warning("️ Configura GITHUB_TOKEN en Secrets")
+            st.warning("⚠️ Configura GITHUB_TOKEN en Secrets")
         else:
-            if st.button(" LEER DATOS", use_container_width=True, type="primary"):
+            if st.button("🔄 LEER DATOS DEL BOT", use_container_width=True, type="primary"):
                 try:
                     url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_BOT}"
                     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
@@ -282,10 +316,10 @@ with tab3:
                     if r.status_code == 200:
                         contenido = base64.b64decode(r.json()["content"]).decode("utf-8")
                         datos_bot = json.loads(contenido)
-                        st.success("✅ Datos leídos")
+                        st.success("✅ Datos leídos correctamente")
                         
                         if datos_bot:
-                            st.markdown("**Proyectos disponibles:**")
+                            st.markdown("**Proyectos disponibles en el bot:**")
                             for pn, dp in datos_bot.items():
                                 nf = len(dp.get("filas", []))
                                 tp = sum(f.get("total", 0) for f in dp.get("filas", []))
@@ -293,20 +327,20 @@ with tab3:
                             st.session_state.datos_bot = datos_bot
                             st.rerun()
                     elif r.status_code == 404:
-                        st.warning("⚠️ Archivo no existe. Envía datos al bot primero.")
+                        st.warning("⚠️ El archivo `datos_bot.json` no existe aún. Envía datos al bot primero.")
                 except Exception as e:
                     st.error(f"❌ Error: {e}")
             
             if 'datos_bot' in st.session_state and st.session_state.datos_bot:
                 st.divider()
-                proy_sel = st.selectbox("Proyecto a importar:", list(st.session_state.datos_bot.keys()))
+                proy_sel = st.selectbox("¿Qué proyecto del bot importar?", list(st.session_state.datos_bot.keys()))
                 filas_bot = st.session_state.datos_bot[proy_sel].get("filas", [])
                 
                 if filas_bot:
-                    st.markdown(f"**{len(filas_bot)} filas disponibles**")
-                    modo = st.radio("¿Cómo importar?", ["Añadir", "Reemplazar"], horizontal=True)
+                    st.markdown(f"**{len(filas_bot)} filas disponibles para importar**")
+                    modo = st.radio("¿Cómo importar?", ["Añadir a las existentes", "Reemplazar todas"], horizontal=True)
                     
-                    if st.button("🚀 IMPORTAR", type="primary", use_container_width=True):
+                    if st.button("🚀 IMPORTAR DATOS", type="primary", use_container_width=True):
                         nuevas = []
                         for f in filas_bot:
                             fila = {'Dia': '', 'Nombre': f['Nombre']}
@@ -315,16 +349,16 @@ with tab3:
                                 fila[c] = cantidades[i] if i < len(cantidades) else 0
                             nuevas.append(fila)
                         
-                        if modo == "Añadir":
+                        if modo == "Añadir a las existentes":
                             p["filas"].extend(nuevas)
                         else:
                             p["filas"] = nuevas
-                        st.success(f"✅ {len(nuevas)} filas importadas")
+                        st.success(f"✅ ¡{len(nuevas)} filas importadas!")
                         st.balloons()
                         st.rerun()
     
     with tab_exc:
-        st.info("Importar desde Excel")
+        st.info("Importar desde un Excel generado previamente")
         archivo = st.file_uploader("Selecciona archivo .xlsx", type=["xlsx"])
         if archivo:
             try:
@@ -352,7 +386,7 @@ with tab3:
                     filas_imp.append(fila)
                     row += 1
                 
-                st.success(f"✅ Leído: {len(filas_imp)} filas")
+                st.success(f"✅ Leído: {len(filas_imp)} filas, {len(conceptos_imp)} conceptos")
                 
                 if st.button("💾 CARGAR COMO NUEVO PROYECTO", type="primary", use_container_width=True):
                     nombre_nuevo = f"{nombre_proy} (importado)"
@@ -362,10 +396,10 @@ with tab3:
                         "filas": filas_imp
                     }
                     st.session_state.proyecto_activo = nombre_nuevo
-                    st.success("✅ Proyecto cargado")
+                    st.success("✅ Proyecto cargado correctamente")
                     st.rerun()
             except Exception as e:
-                st.error(f"Error: {e}")
+                st.error(f"Error al leer: {e}")
 
 with tab4:
     st.markdown("### 🏷️ CONCEPTOS Y PRECIOS")
@@ -382,9 +416,9 @@ with tab4:
                                         "Precio": st.column_config.NumberColumn(format="%.2f", min_value=0.0, step=0.5)})
     p["conceptos"] = edited.reset_index(drop=True)
     
-    if st.button("🔄 APLICAR CAMBIOS", use_container_width=True):
+    if st.button("🔄 APLICAR CAMBIOS A LAS FILAS", use_container_width=True):
         p["filas"] = adaptar_filas(p["filas"], obtener_conceptos_validos(p))
-        st.success("✅ Actualizado")
+        st.success("✅ Conceptos actualizados correctamente")
         st.rerun()
     
     st.divider()
@@ -394,11 +428,11 @@ with tab4:
     with col_a:
         config_data = {"proyecto": st.session_state.proyecto_activo, "empresa": p["empresa"], 
                       "fecha": p["fecha"], "conceptos": conceptos_validos.to_dict(orient="records")}
-        st.download_button("⬇️ DESCARGAR CONFIG", json.dumps(config_data, indent=2, ensure_ascii=False),
+        st.download_button("⬇️ DESCARGAR CONFIG (.json)", json.dumps(config_data, indent=2, ensure_ascii=False),
                           f"config_{st.session_state.proyecto_activo.replace(' ', '_')}.json", use_container_width=True)
     
     with col_b:
-        uploaded = st.file_uploader("⬆️ CARGAR CONFIG (.json)", type=["json"])
+        uploaded = st.file_uploader("️ CARGAR CONFIG (.json)", type=["json"])
         if uploaded:
             try:
                 data = json.load(uploaded)
@@ -412,7 +446,7 @@ with tab4:
                 st.error(f"Error: {e}")
     
     st.divider()
-    st.markdown("### 📤 EXPORTAR EXCEL")
+    st.markdown("### 📤 EXPORTAR A EXCEL")
     
     if st.button("🚀 GENERAR EXCEL", type="primary", use_container_width=True, disabled=not p["filas"]):
         wb = openpyxl.Workbook()
@@ -485,6 +519,7 @@ with tab4:
         wb.save(buffer)
         buffer.seek(0)
         
-        st.download_button("📥 DESCARGAR", buffer, f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx",
+        st.download_button("📥 DESCARGAR EXCEL", buffer, f"Certificacion_{st.session_state.proyecto_activo.replace(' ', '_')}.xlsx",
                           mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
-        st.success("✅ Excel generado")
+        st.success("✅ Excel generado correctamente")
+        
