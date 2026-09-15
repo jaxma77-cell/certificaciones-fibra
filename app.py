@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 st.set_page_config(
     page_title="Generador de Certificaciones", 
     layout="wide",
-    page_icon="🛠️",
+    page_icon="️",
     initial_sidebar_state="expanded"
 )
 
@@ -109,7 +109,7 @@ def calcular_totales(filas, conceptos_list, precios_list):
 def formato_euro(valor):
     return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# --- ESTILOS CSS MEJORADOS ---
+# --- ESTILOS CSS MEJORADOS - VISIBILIDAD TOTAL ---
 modo_oscuro = False
 
 with st.sidebar:
@@ -138,66 +138,83 @@ if modo_oscuro:
         }
         div[data-testid="stSidebar"] {
             background-color: #1a1a1a;
+            color: #fafafa;
+        }
+        div[data-testid="stSidebar"] * {
+            color: #fafafa !important;
         }
         </style>
     """, unsafe_allow_html=True)
 else:
-    # MODO CLARO MEJORADO - MÉTRICAS BIEN VISIBLES
+    # MODO CLARO - VISIBILIDAD MÁXIMA EN TODO
     st.markdown("""
         <style>
+        /* Fondo general */
         .stApp {
-            background-color: #f0f2f6;
-            color: #212529;
+            background-color: #f5f5f5;
+            color: #1a1a1a;
         }
         
-        /* Métricas MUY visibles en modo claro */
+        /* MÉTRICAS - Gradiente visible */
         .stMetric {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             padding: 25px;
             border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
-            transition: all 0.3s ease;
-        }
-        .stMetric:hover {
-            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.4);
-            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
         }
         .stMetricLabel {
             color: #ffffff !important;
             font-weight: 600 !important;
-            font-size: 15px !important;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 14px !important;
         }
         .stMetricValue {
             color: #ffffff !important;
             font-weight: 800 !important;
             font-size: 32px !important;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         
-        /* Barra lateral */
+        /* BARRA LATERAL - TEXTO OSCURO VISIBLE */
         div[data-testid="stSidebar"] {
-            background-color: #ffffff;
-            border-right: 2px solid #e9ecef;
+            background-color: #ffffff !important;
+            border-right: 3px solid #dee2e6;
         }
-        div[data-testid="stSidebar"] h1, 
-        div[data-testid="stSidebar"] h2, 
-        div[data-testid="stSidebar"] h3 {
-            color: #212529 !important;
+        div[data-testid="stSidebar"] * {
+            color: #1a1a1a !important;
+        }
+        div[data-testid="stSidebar"] h1,
+        div[data-testid="stSidebar"] h2,
+        div[data-testid="stSidebar"] h3,
+        div[data-testid="stSidebar"] p,
+        div[data-testid="stSidebar"] label,
+        div[data-testid="stSidebar"] span,
+        div[data-testid="stSidebar"] a,
+        div[data-testid="stSidebar"] button {
+            color: #1a1a1a !important;
+        }
+        div[data-testid="stSidebar"] input,
+        div[data-testid="stSidebar"] select {
+            background-color: #ffffff !important;
+            color: #1a1a1a !important;
+            border: 2px solid #dee2e6 !important;
+        }
+        div[data-testid="stSidebar"] .stButton>button {
+            background-color: #0d6efd !important;
+            color: #ffffff !important;
         }
         
-        /* Pestañas */
+        /* PESTAÑAS - TEXTO VISIBLE */
         .stTabs [data-baseweb="tab-list"] {
+            background-color: #ffffff;
             gap: 8px;
         }
         .stTabs [data-baseweb="tab"] {
             background-color: #ffffff;
             border-radius: 8px 8px 0 0;
-            padding: 12px 20px;
-            border: 2px solid #e9ecef;
-            color: #495057;
+            padding: 12px 24px;
+            border: 2px solid #dee2e6;
+            color: #1a1a1a !important;
             font-weight: 600;
         }
         .stTabs [aria-selected="true"] {
@@ -205,64 +222,106 @@ else:
             color: #ffffff !important;
             border-color: #0d6efd !important;
         }
+        .stTabs [aria-selected="true"] * {
+            color: #ffffff !important;
+        }
         
-        /* Botones */
+        /* BOTONES */
         .stButton>button {
             background-color: #0d6efd;
-            color: #ffffff;
+            color: #ffffff !important;
             border: none;
             border-radius: 8px;
-            padding: 10px 20px;
+            padding: 10px 24px;
             font-weight: 600;
             transition: all 0.3s ease;
         }
         .stButton>button:hover {
             background-color: #0b5ed7;
-            box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
         }
         .stButton>button[kind="primary"] {
-            background-color: #198754;
+            background-color: #198754 !important;
+            color: #ffffff !important;
         }
         .stButton>button[kind="primary"]:hover {
-            background-color: #157347;
+            background-color: #157347 !important;
+        }
+        .stButton>button[kind="secondary"] {
+            background-color: #6c757d !important;
+            color: #ffffff !important;
         }
         
-        /* Tablas */
+        /* TABLAS */
         .stDataFrame {
-            border: 2px solid #e9ecef;
+            border: 2px solid #dee2e6;
             border-radius: 8px;
             overflow: hidden;
+            background-color: #ffffff;
         }
         
-        /* Títulos */
-        h1, h2, h3, h4 {
-            color: #212529 !important;
+        /* TÍTULOS Y TEXTOS */
+        h1, h2, h3, h4, h5, h6 {
+            color: #1a1a1a !important;
             font-weight: 700 !important;
         }
+        p, span, label, div {
+            color: #1a1a1a !important;
+        }
         
-        /* Alertas */
+        /* ALERTAS E INFO */
         .stAlert {
             border-radius: 8px;
             border: 2px solid;
+            background-color: #ffffff;
+            color: #1a1a1a !important;
+        }
+        .stAlert * {
+            color: #1a1a1a !important;
         }
         
-        /* Selectores */
+        /* SELECTORES E INPUTS */
         .stSelectbox > div > div {
             background-color: #ffffff;
-            border: 2px solid #e9ecef;
+            border: 2px solid #dee2e6;
             border-radius: 8px;
+            color: #1a1a1a !important;
         }
-        
-        /* Inputs de texto */
+        .stSelectbox > div > div * {
+            color: #1a1a1a !important;
+        }
         .stTextInput > div > div > input {
             background-color: #ffffff;
-            border: 2px solid #e9ecef;
+            border: 2px solid #dee2e6;
             border-radius: 8px;
-            color: #212529;
+            color: #1a1a1a !important;
         }
         .stTextInput > div > div > input:focus {
             border-color: #0d6efd;
             box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        
+        /* EXPANDERS */
+        .streamlit-expanderHeader {
+            background-color: #ffffff;
+            color: #1a1a1a !important;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+        }
+        .streamlit-expanderHeader * {
+            color: #1a1a1a !important;
+        }
+        
+        /* RADIO BUTTONS Y CHECKBOXES */
+        .stRadio > label,
+        .stCheckbox > label {
+            color: #1a1a1a !important;
+            font-weight: 600;
+        }
+        
+        /* CAPTIONS */
+        caption, .stCaption {
+            color: #495057 !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -344,16 +403,16 @@ p["totales"] = totales_fila
 p["total_general"] = total_general
 
 # --- ENCABEZADO CON DASHBOARD ---
-st.title(f"️ {st.session_state.proyecto_activo}")
+st.title(f"🛠️ {st.session_state.proyecto_activo}")
 st.caption(f"**{p['empresa']}** · {p['fecha']}")
 
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    st.metric(" Total General", formato_euro(total_general))
+    st.metric("💰 Total General", formato_euro(total_general))
 with col2:
     st.metric("📋 Filas", len(p["filas"]))
 with col3:
-    st.metric("🏷️ Conceptos", len(conceptos_list))
+    st.metric("️ Conceptos", len(conceptos_list))
 with col4:
     promedio = total_general / len(p["filas"]) if p["filas"] else 0
     st.metric("📊 Media por fila", formato_euro(promedio))
@@ -364,7 +423,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "📝 Registro de Trabajos", 
     "📊 Análisis y Gráficos",
     "📥 Importar Datos",
-    "⚙️ Configuración"
+    "️ Configuración"
 ])
 
 # --- PESTAÑA 1: REGISTRO DE TRABAJOS ---
@@ -549,7 +608,7 @@ with tab3:
                             st.session_state.datos_bot = datos_bot
                             st.rerun()
                     elif r.status_code == 404:
-                        st.warning("⚠️ El archivo `datos_bot.json` no existe aún.")
+                        st.warning("️ El archivo `datos_bot.json` no existe aún.")
                     else:
                         st.error(f"❌ Error: {r.status_code}")
                 except Exception as e:
@@ -620,7 +679,7 @@ with tab3:
 
 # --- PESTAÑA 4: CONFIGURACIÓN ---
 with tab4:
-    tab_conceptos, tab_exportar, tab_precios = st.tabs(["️ Conceptos y Precios", " Exportar Excel", "💾 Guardar/Cargar"])
+    tab_conceptos, tab_exportar, tab_precios = st.tabs(["🏷️ Conceptos y Precios", "📤 Exportar Excel", " Guardar/Cargar"])
     
     with tab_conceptos:
         st.markdown(f"### 📋 Proyecto: {st.session_state.proyecto_activo}")
@@ -645,9 +704,9 @@ with tab4:
                 st.rerun()
     
     with tab_exportar:
-        st.markdown("### 📊 Exportar a Excel con formato oficial")
+        st.markdown("###  Exportar a Excel con formato oficial")
         if not p["filas"] or len(conceptos_list) == 0:
-            st.error("⚠️ No hay datos o no hay conceptos definidos")
+            st.error("️ No hay datos o no hay conceptos definidos")
         else:
             if st.button("🚀 Generar Excel", type="primary", use_container_width=True):
                 wb = openpyxl.Workbook()
@@ -715,7 +774,7 @@ with tab4:
                 st.success("✅ ¡Excel generado correctamente!")
     
     with tab_precios:
-        st.markdown("###  Guardar y Cargar configuración")
+        st.markdown("### 💾 Guardar y Cargar configuración")
         col_save, col_load = st.columns(2)
         with col_save:
             config_data = {"proyecto": st.session_state.proyecto_activo, "empresa": p["empresa"], 
@@ -735,3 +794,4 @@ with tab4:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error: {e}")
+                    
