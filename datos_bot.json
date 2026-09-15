@@ -1,48 +1,5 @@
 {
   "FIBRAMOL": {
-    "filas": [
-      {
-        "Dia": "15",
-        "Nombre": "alt25",
-        "cantidades": [
-          1,
-          2,
-          2,
-          1,
-          7,
-          0,
-          0
-        ],
-        "total": 116.5
-      },
-      {
-        "Dia": "15",
-        "Nombre": "alt25",
-        "cantidades": [
-          1,
-          2,
-          4,
-          2,
-          4,
-          0,
-          0
-        ],
-        "total": 120.5
-      },
-      {
-        "Dia": "15",
-        "Nombre": "alt25",
-        "cantidades": [
-          1,
-          2,
-          4,
-          2,
-          4,
-          0,
-          0
-        ],
-        "total": 120.5
-      }
-    ]
+    "filas": []
   }
 }
