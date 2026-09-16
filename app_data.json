@@ -1,0 +1,68 @@
+{
+  "Santomera Mayo 2024": {
+    "empresa": "Fibranet Tecnologia y Sistemas SLU",
+    "fecha": "May-24",
+    "conceptos": [
+      {
+        "Concepto": "Preparación Extremo de Cable",
+        "Precio": 18.0
+      },
+      {
+        "Concepto": "Preparación Sangrado",
+        "Precio": 36.0
+      },
+      {
+        "Concepto": "Instalación Caja de Empalme, CTO",
+        "Precio": 12.0
+      },
+      {
+        "Concepto": "Instalación de Spliter",
+        "Precio": 3.1
+      },
+      {
+        "Concepto": "Empalme a Fusión hasta 24fo",
+        "Precio": 7.0
+      },
+      {
+        "Concepto": "Medida de potencia de 1 fibra en 2a y 3a ventana",
+        "Precio": 2.5
+      }
+    ],
+    "filas": []
+  },
+  "FIBRAMOL  SEPTIEMBRE": {
+    "empresa": "Fibranet",
+    "fecha": "Jul-26",
+    "conceptos": [
+      {
+        "Concepto": "Preparación extremo de cable",
+        "Precio": 12.5
+      },
+      {
+        "Concepto": "Preparación Sangrado",
+        "Precio": 25.0
+      },
+      {
+        "Concepto": "Instalación Caja de Empalme, CTO",
+        "Precio": 8.0
+      },
+      {
+        "Concepto": "Instalación Spliter",
+        "Precio": 3.0
+      },
+      {
+        "Concepto": "Empalme a fusión hasta 64fo",
+        "Precio": 5.0
+      },
+      {
+        "Concepto": "Empalme a fusión a partir de 64fo",
+        "Precio": 2.5
+      },
+      {
+        "Concepto": "Medida de potencia de 1 fibra en 2a y 3a ventana",
+        "Precio": 2.0
+      }
+    ],
+    "filas": []
+  }
+}
