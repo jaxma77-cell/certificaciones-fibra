@@ -30,9 +30,9 @@
     ],
     "filas": []
   },
-  "FIBRAMOL  SEPTIEMBRE": {
-    "empresa": "Fibranet",
-    "fecha": "Jul-26",
+  "FIBRAMOL SEPTIEMBRE": {
+    "empresa": "FIBRAMOL",
+    "fecha": "16/09/2026",
     "conceptos": [
       {
         "Concepto": "Preparación extremo de cable",
@@ -61,6 +61,10 @@
       {
         "Concepto": "Medida de potencia de 1 fibra en 2a y 3a ventana",
         "Precio": 2.0
+      },
+      {
+        "Concepto": "",
+        "Precio": null
       }
     ],
     "filas": []
