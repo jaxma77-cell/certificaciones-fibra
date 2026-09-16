@@ -22,9 +22,9 @@ GITHUB_USUARIO = "jaxma77-cell"
 GITHUB_REPO = "certificaciones-fibra"
 GITHUB_ARCHIVO_DATOS = "datos_bot.json"
 GITHUB_ARCHIVO_CONFIG = "config_bot.json"
-GITHUB_ARCHIVO_APP = "app_data.json" # NUEVO: Para guardar toda la app
+GITHUB_ARCHIVO_APP = "app_data.json"
 
-# --- DATOS INICIALES (Por defecto) ---
+# --- DATOS INICIALES ---
 def get_default_proyectos():
     return {
         "FIBRAMOL JUNIO Y JULIO": {
@@ -58,7 +58,7 @@ if 'proyectos' not in st.session_state:
 if 'pie_pagina' not in st.session_state:
     st.session_state.pie_pagina = "F'BERED INGENIERIA EN REDES DE FIBRA"
 
-# --- FUNCIONES DE PERSISTENCIA EN GITHUB ---
+# --- PERSISTENCIA EN LA NUBE ---
 def cargar_estado_app():
     if not GITHUB_TOKEN: return None
     try:
@@ -68,35 +68,27 @@ def cargar_estado_app():
         if r.status_code == 200:
             contenido = base64.b64decode(r.json()["content"]).decode("utf-8")
             datos = json.loads(contenido)
-            # Reconstruir DataFrames
             for nombre, p in datos.items():
                 p["conceptos"] = pd.DataFrame(p["conceptos"])
             return datos
-    except:
-        pass
+    except: pass
     return None
 
 def guardar_estado_app():
-    if not GITHUB_TOKEN: 
-        st.error("❌ No hay token de GitHub configurado en los Secrets."); return False
+    if not GITHUB_TOKEN: return False
     try:
         url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_APP}"
         headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-        
-        # Preparar datos (convertir DataFrames a listas)
         datos_a_guardar = {}
         for nombre, p in st.session_state.proyectos.items():
             datos_a_guardar[nombre] = {
-                "empresa": p["empresa"],
-                "fecha": p["fecha"],
+                "empresa": p["empresa"], "fecha": p["fecha"],
                 "conceptos": p["conceptos"].to_dict(orient="records"),
                 "filas": p["filas"]
             }
-        
         contenido_nuevo = json.dumps(datos_a_guardar, indent=2, ensure_ascii=False)
         contenido_b64 = base64.b64encode(contenido_nuevo.encode("utf-8")).decode("utf-8")
         
-        # Comprobar si existe para obtener el SHA
         r = requests.get(url, headers=headers)
         sha = r.json()["sha"] if r.status_code == 200 else None
         
@@ -108,11 +100,9 @@ def guardar_estado_app():
     except Exception as e:
         st.error(f"Error al guardar: {e}"); return False
 
-# Intentar cargar datos al inicio
 if 'datos_cargados' not in st.session_state:
     datos_nube = cargar_estado_app()
-    if datos_nube:
-        st.session_state.proyectos = datos_nube
+    if datos_nube: st.session_state.proyectos = datos_nube
     st.session_state.datos_cargados = True
 
 # --- FUNCIONES AUXILIARES ---
@@ -130,7 +120,6 @@ def calcular_totales(filas, conceptos_list, precios_list):
 def formato_euro(valor):
     return f"{valor:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
 
-# --- FUNCIÓN: SINCRONIZAR CONCEPTOS CON GITHUB (Para el Bot) ---
 def sincronizar_config_bot(nombre_proyecto_app, conceptos_list, precios_list):
     if not GITHUB_TOKEN: return False, "No hay token"
     try:
@@ -152,11 +141,10 @@ def sincronizar_config_bot(nombre_proyecto_app, conceptos_list, precios_list):
         if sha: payload["sha"] = sha
         
         r = requests.put(url, headers=headers, json=payload)
-        if r.status_code in (200, 201): return True, f"Sincronizados {len(conceptos_list)} conceptos en GitHub"
+        if r.status_code in (200, 201): return True, f"Sincronizados {len(conceptos_list)} conceptos"
         return False, f"Error: {r.status_code}"
     except Exception as e: return False, f"Error: {str(e)}"
 
-# --- FUNCIÓN: BORRAR EN GITHUB (Para el Bot) ---
 def borrar_en_github(tipo, valor, nombre_proyecto_app):
     if not GITHUB_TOKEN: return False, "No hay token"
     try:
@@ -177,7 +165,7 @@ def borrar_en_github(tipo, valor, nombre_proyecto_app):
                 if proj.upper() in nombre_proyecto_app.upper() or nombre_proyecto_app.upper() in proj.upper():
                     nombre_github = proj; break
         
-        if not nombre_github: return False, f"No se encontró el proyecto en GitHub. Proyectos: {list(datos.keys())}"
+        if not nombre_github: return False, f"No se encontró el proyecto. Proyectos: {list(datos.keys())}"
         
         filas_originales = datos[nombre_github].get("filas", [])
         if tipo == 'dia': filas_filtradas = [f for f in filas_originales if f.get('Dia') != valor]; campo = 'Día'
@@ -193,7 +181,7 @@ def borrar_en_github(tipo, valor, nombre_proyecto_app):
         payload = {"message": f"Borrado {num_borradas} filas por {campo}: {valor}", "content": contenido_b64, "sha": sha}
         r = requests.put(url, headers=headers, json=payload)
         
-        if r.status_code in (200, 201): return True, f"Borradas {num_borradas} filas de GitHub (proyecto: {nombre_github})"
+        if r.status_code in (200, 201): return True, f"Borradas {num_borradas} filas de GitHub"
         return False, f"Error al guardar: {r.status_code}"
     except Exception as e: return False, f"Error: {str(e)}"
 
@@ -220,16 +208,13 @@ div[data-testid="stDataFrame"] * { color: #fafafa !important; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- BARRA LATERAL ---
+# --- BARRA LATERAL (CON RENOMBRAR ARREGLADO) ---
 with st.sidebar:
-    # BOTÓN CLAVE PARA GUARDAR TODO
     if st.button("💾 GUARDAR TODO EN LA NUBE", use_container_width=True, type="primary"):
-        if guardar_estado_app():
-            st.success("✅ ¡Todos los proyectos y datos guardados en la nube!")
-        else:
-            st.error("❌ Error al guardar en la nube.")
+        if guardar_estado_app(): st.success("✅ ¡Todo guardado en la nube!")
+        else: st.error("❌ Error al guardar.")
     
-    st.header("📁 PROYECTOS", divider=True)
+    st.header(" PROYECTOS", divider=True)
     proyecto_seleccionado = st.selectbox("Selecciona proyecto:", options=list(st.session_state.proyectos.keys()), index=list(st.session_state.proyectos.keys()).index(st.session_state.proyecto_activo))
     st.session_state.proyecto_activo = proyecto_seleccionado
     st.divider()
@@ -240,11 +225,31 @@ with st.sidebar:
             st.session_state.proyectos[nombre] = {"empresa": "", "fecha": "", "conceptos": pd.DataFrame({"Concepto": [""], "Precio": [0.0]}), "filas": []}
             st.session_state.proyecto_activo = nombre; st.rerun()
     
-    if st.button("✏️ Renombrar", use_container_width=True):
-        nuevo = st.text_input("Nuevo nombre:", st.session_state.proyecto_activo)
-        if nuevo and nuevo != st.session_state.proyecto_activo and nuevo not in st.session_state.proyectos:
-            st.session_state.proyectos[nuevo] = st.session_state.proyectos.pop(st.session_state.proyecto_activo)
-            st.session_state.proyecto_activo = nuevo; st.rerun()
+    # LÓGICA DE RENOMBRAR CORREGIDA
+    if 'renaming' not in st.session_state: st.session_state.renaming = False
+    
+    if st.button("✏️ Renombrar Proyecto", use_container_width=True):
+        st.session_state.renaming = True
+        st.rerun()
+    
+    if st.session_state.renaming:
+        st.warning("Escribe el nuevo nombre y pulsa Confirmar:")
+        nuevo = st.text_input("Nuevo nombre:", st.session_state.proyecto_activo, key="input_renombrar")
+        col_c1, col_c2 = st.columns(2)
+        with col_c1:
+            if st.button("✅ Confirmar", use_container_width=True):
+                if nuevo and nuevo != st.session_state.proyecto_activo and nuevo not in st.session_state.proyectos:
+                    st.session_state.proyectos[nuevo] = st.session_state.proyectos.pop(st.session_state.proyecto_activo)
+                    st.session_state.proyecto_activo = nuevo
+                    st.session_state.renaming = False
+                    st.success(f"✅ Renombrado a '{nuevo}'")
+                    st.rerun()
+                elif nuevo in st.session_state.proyectos:
+                    st.error("Ya existe un proyecto con ese nombre")
+        with col_c2:
+            if st.button("❌ Cancelar", use_container_width=True):
+                st.session_state.renaming = False
+                st.rerun()
     
     if st.button("🗑️ Eliminar Proyecto", use_container_width=True):
         if len(st.session_state.proyectos) > 1:
@@ -295,8 +300,7 @@ with tab1:
         st.divider()
         
         st.markdown("### 🗑️ ELIMINAR REGISTROS DE GITHUB")
-        st.info("️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
-        st.caption(f"📌 Proyecto activo: '{st.session_state.proyecto_activo}' | Token: {'✅' if GITHUB_TOKEN else '❌'}")
+        st.info("⚠️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
         
         col_elim1, col_elim2 = st.columns(2)
         
@@ -307,7 +311,7 @@ with tab1:
                     dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
                     if dia_a_eliminar:
                         num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
-                        if st.button(f"🗑️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
+                        if st.button(f"️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
                             p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
                             ok, msg = borrar_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
                             if ok: st.success(f"✅ {msg}")
@@ -334,7 +338,7 @@ with tab1:
 
         st.divider()
         col_f1, col_f2 = st.columns(2)
-        filtro_nombre = col_f1.text_input("🔍 BUSCAR:", placeholder="ALT-CE07")
+        filtro_nombre = col_f1.text_input(" BUSCAR:", placeholder="ALT-CE07")
         dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
         filtro_dia = col_f2.selectbox("📅 FILTRAR POR DÍA:", ["TODOS"] + dias)
         
@@ -395,7 +399,7 @@ with tab3:
         st.info("Importar datos guardados por el bot de Telegram en GitHub")
         if not GITHUB_TOKEN: st.warning("⚠️ Configura GITHUB_TOKEN en Secrets")
         else:
-            if st.button("🔄 LEER DATOS DEL BOT", use_container_width=True, type="primary"):
+            if st.button(" LEER DATOS DEL BOT", use_container_width=True, type="primary"):
                 try:
                     url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_DATOS}"
                     headers = {"Authorization": f"token {GITHUB_TOKEN}"}
@@ -423,7 +427,6 @@ with tab3:
                     if st.button("🚀 IMPORTAR DATOS", type="primary", use_container_width=True):
                         nuevas = []
                         for f in filas_bot:
-                            # AQUÍ ESTABA EL BUG DEL DÍA, YA CORREGIDO
                             fila = {'Dia': f.get('Dia', ''), 'Nombre': f['Nombre']}
                             cantidades = f.get('cantidades', [])
                             for i, c in enumerate(conceptos_list): fila[c] = cantidades[i] if i < len(cantidades) else 0
@@ -456,7 +459,7 @@ with tab3:
             except Exception as e: st.error(f"Error al leer: {e}")
 
 with tab4:
-    st.markdown("### 🏷️ CONCEPTOS Y PRECIOS")
+    st.markdown("### ️ CONCEPTOS Y PRECIOS")
     col1, col2 = st.columns(2)
     p["empresa"] = col1.text_input("EMPRESA:", p["empresa"]); p["fecha"] = col2.text_input("FECHA/MES:", p["fecha"])
     st.divider()
