@@ -64,9 +64,21 @@
       },
       {
         "Concepto": "",
-        "Precio": null
+        "Precio": NaN
       }
     ],
-    "filas": []
+    "filas": [
+      {
+        "Dia": "15",
+        "Nombre": "alt25",
+        "Preparación extremo de cable": 1,
+        "Preparación Sangrado": 2,
+        "Instalación Caja de Empalme, CTO": 4,
+        "Instalación Spliter": 2,
+        "Empalme a fusión hasta 64fo": 4,
+        "Empalme a fusión a partir de 64fo": 0,
+        "Medida de potencia de 1 fibra en 2a y 3a ventana": 0
+      }
+    ]
   }
 }
