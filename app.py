@@ -128,7 +128,6 @@ def sincronizar_config_bot(nombre_proyecto_app, conceptos_list, precios_list):
     try:
         url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_CONFIG}"
         headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-        # Mapeo básico para la sincronización
         mapeo = {"FIBRAMOL JUNIO Y JULIO": "FIBRAMOL", "Santomera Mayo 2024": "SANTOMERA"}
         nombre_github = mapeo.get(nombre_proyecto_app, nombre_proyecto_app)
         
@@ -149,8 +148,24 @@ def sincronizar_config_bot(nombre_proyecto_app, conceptos_list, precios_list):
         return False, f"Error: {r.status_code}"
     except Exception as e: return False, f"Error: {str(e)}"
 
-# --- FUNCIÓN DE BORRADO INTELIGENTE (CORREGIDA) ---
-def borrar_en_github(tipo, valor, nombre_proyecto_app):
+# --- FUNCIÓN: OBTENER PROYECTOS DE GITHUB ---
+def obtener_proyectos_github():
+    """Devuelve la lista de proyectos que existen en datos_bot.json"""
+    if not GITHUB_TOKEN: return []
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_DATOS}"
+        headers = {"Authorization": f"token {GITHUB_TOKEN}"}
+        r = requests.get(url, headers=headers)
+        if r.status_code == 200:
+            contenido = base64.b64decode(r.json()["content"]).decode("utf-8")
+            datos = json.loads(contenido)
+            return list(datos.keys())
+    except: pass
+    return []
+
+# --- FUNCIÓN: BORRAR EN GITHUB (SELECCIÓN MANUAL) ---
+def borrar_en_github_manual(tipo, valor, nombre_proyecto_github):
+    """Borra filas del proyecto específico de GitHub que el usuario elige"""
     if not GITHUB_TOKEN: return False, "No hay token de GitHub configurado."
     try:
         url = f"https://api.github.com/repos/{GITHUB_USUARIO}/{GITHUB_REPO}/contents/{GITHUB_ARCHIVO_DATOS}"
@@ -161,49 +176,34 @@ def borrar_en_github(tipo, valor, nombre_proyecto_app):
         contenido = base64.b64decode(r.json()["content"]).decode("utf-8")
         sha = r.json()["sha"]; datos = json.loads(contenido)
         
-        # BUSCADOR INTELIGENTE DE PROYECTOS
-        nombre_github = None
+        if nombre_proyecto_github not in datos:
+            return False, f"El proyecto '{nombre_proyecto_github}' no existe en GitHub"
         
-        # 1. Coincidencia exacta
-        if nombre_proyecto_app in datos:
-            nombre_github = nombre_proyecto_app
-        else:
-            # 2. Búsqueda por palabras clave (ignora mayúsculas/minúsculas)
-            app_lower = nombre_proyecto_app.lower()
-            for proj in list(datos.keys()):
-                proj_lower = proj.lower()
-                # Si el nombre del bot está dentro del nombre de la app o viceversa
-                if proj_lower in app_lower or app_lower in proj_lower:
-                    nombre_github = proj
-                    break
-                # 3. Si comparten al menos una palabra de más de 3 letras
-                palabras_app = [p for p in app_lower.split() if len(p) > 3]
-                for palabra in palabras_app:
-                    if palabra in proj_lower:
-                        nombre_github = proj
-                        break
-                if nombre_github: break
-        
-        if not nombre_github: 
-            return False, f"No se encontró el proyecto en GitHub. Proyectos en GitHub: {list(datos.keys())}. Tu proyecto en la app: '{nombre_proyecto_app}'"
-        
-        filas_originales = datos[nombre_github].get("filas", [])
-        if tipo == 'dia': filas_filtradas = [f for f in filas_originales if f.get('Dia') != valor]; campo = 'Día'
-        elif tipo == 'ubicacion': filas_filtradas = [f for f in filas_originales if f.get('Nombre') != valor]; campo = 'Nombre'
-        else: return False, "Tipo no válido"
+        filas_originales = datos[nombre_proyecto_github].get("filas", [])
+        if tipo == 'dia': 
+            filas_filtradas = [f for f in filas_originales if f.get('Dia') != valor]
+            campo = 'Día'
+        elif tipo == 'ubicacion': 
+            filas_filtradas = [f for f in filas_originales if f.get('Nombre') != valor]
+            campo = 'Nombre'
+        else: 
+            return False, "Tipo no válido"
         
         num_borradas = len(filas_originales) - len(filas_filtradas)
-        if num_borradas == 0: return False, f"No se encontraron filas con {campo}='{valor}' en el proyecto '{nombre_github}'"
+        if num_borradas == 0: 
+            return False, f"No se encontraron filas con {campo}='{valor}' en '{nombre_proyecto_github}'"
         
-        datos[nombre_github]["filas"] = filas_filtradas
+        datos[nombre_proyecto_github]["filas"] = filas_filtradas
         contenido_nuevo = json.dumps(datos, indent=2, ensure_ascii=False)
         contenido_b64 = base64.b64encode(contenido_nuevo.encode("utf-8")).decode("utf-8")
         payload = {"message": f"Borrado {num_borradas} filas por {campo}: {valor}", "content": contenido_b64, "sha": sha}
         r = requests.put(url, headers=headers, json=payload)
         
-        if r.status_code in (200, 201): return True, f"Borradas {num_borradas} filas de GitHub (Proyecto: {nombre_github})"
+        if r.status_code in (200, 201): 
+            return True, f"Borradas {num_borradas} filas de GitHub (Proyecto: {nombre_proyecto_github})"
         return False, f"Error al guardar en GitHub: {r.status_code}"
-    except Exception as e: return False, f"Error: {str(e)}"
+    except Exception as e: 
+        return False, f"Error: {str(e)}"
 
 # --- CSS MODO OSCURO ---
 st.markdown("""
@@ -232,9 +232,9 @@ div[data-testid="stDataFrame"] * { color: #fafafa !important; }
 with st.sidebar:
     if st.button("💾 GUARDAR TODO EN LA NUBE", use_container_width=True, type="primary"):
         if guardar_estado_app(): st.success("✅ ¡Todo guardado en la nube!")
-        else: st.error(" Error al guardar.")
+        else: st.error("❌ Error al guardar.")
     
-    st.header(" PROYECTOS", divider=True)
+    st.header("📁 PROYECTOS", divider=True)
     nombres_proyectos = list(st.session_state.proyectos.keys())
     idx_actual = nombres_proyectos.index(st.session_state.proyecto_activo) if st.session_state.proyecto_activo in nombres_proyectos else 0
     proyecto_seleccionado = st.selectbox("Selecciona proyecto:", options=nombres_proyectos, index=idx_actual)
@@ -266,14 +266,14 @@ with st.sidebar:
             if st.button("❌ Cancelar", use_container_width=True):
                 st.session_state.renaming = False; st.rerun()
     
-    if st.button("🗑️ Eliminar Proyecto", use_container_width=True):
+    if st.button("️ Eliminar Proyecto", use_container_width=True):
         if len(st.session_state.proyectos) > 1:
             del st.session_state.proyectos[st.session_state.proyecto_activo]
             st.session_state.proyecto_activo = list(st.session_state.proyectos.keys())[0]; st.rerun()
         else: st.error("No puedes eliminar el último proyecto")
     
     st.divider()
-    st.subheader("⚙️ Configuración")
+    st.subheader("️ Configuración")
     st.session_state.pie_pagina = st.text_input("Pie de página:", st.session_state.pie_pagina)
 
 # --- LÓGICA PRINCIPAL ---
@@ -293,20 +293,20 @@ st.divider()
 
 col1, col2, col3, col4 = st.columns(4)
 col1.metric("💰 TOTAL", formato_euro(total_general))
-col2.metric(" FILAS", len(p["filas"]))
+col2.metric("📋 FILAS", len(p["filas"]))
 col3.metric("🏷️ CONCEPTOS", len(conceptos_list))
-col4.metric(" MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas"] else 0))
+col4.metric("📊 MEDIA", formato_euro(total_general/len(p["filas"]) if p["filas"] else 0))
 st.divider()
 
-tab1, tab2, tab3, tab4 = st.tabs([" REGISTRO", "📊 ANÁLISIS", "📥 IMPORTAR", "️ CONFIGURACIÓN"])
+tab1, tab2, tab3, tab4 = st.tabs(["📝 REGISTRO", "📊 ANÁLISIS", "📥 IMPORTAR", "⚙️ CONFIGURACIÓN"])
 
 with tab1:
     if not conceptos_list: st.error("❌ Añade conceptos en CONFIGURACIÓN")
     else:
         c1, c2, c3 = st.columns(3)
-        if c1.button(" AÑADIR FILA", use_container_width=True):
+        if c1.button("➕ AÑADIR FILA", use_container_width=True):
             p["filas"].append({'Dia': '', 'Nombre': '', **{c: 0 for c in conceptos_list}}); st.rerun()
-        if c2.button("📋 DUPLICAR ÚLTIMA", use_container_width=True, disabled=not p["filas"]):
+        if c2.button(" DUPLICAR ÚLTIMA", use_container_width=True, disabled=not p["filas"]):
             if p["filas"]:
                 copia = p["filas"][-1].copy(); copia['Nombre'] = ''; p["filas"].append(copia); st.rerun()
         if c3.button("🗑️ BORRAR TODO", use_container_width=True):
@@ -314,48 +314,74 @@ with tab1:
         
         st.divider()
         
+        # SECCIÓN DE ELIMINACIÓN CON SELECCIÓN MANUAL DE PROYECTO GITHUB
         st.markdown("### 🗑️ ELIMINAR REGISTROS DE GITHUB")
-        st.info("️ **Atención**: Al borrar aquí, también se eliminarán del archivo del bot en GitHub.")
+        st.info("⚠️ **Importante**: Selecciona el proyecto de GitHub donde quieres borrar los datos.")
         
-        col_elim1, col_elim2 = st.columns(2)
+        # Botón para cargar proyectos de GitHub
+        if st.button("🔄 Cargar proyectos de GitHub", use_container_width=True):
+            proyectos_gh = obtener_proyectos_github()
+            if proyectos_gh:
+                st.session_state.proyectos_github = proyectos_gh
+                st.success(f"✅ Proyectos encontrados en GitHub: {proyectos_gh}")
+            else:
+                st.warning("⚠️ No se encontraron proyectos en GitHub o no hay token configurado.")
         
-        with col_elim1:
-            if p["filas"]:
-                dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
-                if dias:
-                    dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
-                    if dia_a_eliminar:
-                        num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
-                        if st.button(f"🗑️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
-                            p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
-                            ok, msg = borrar_en_github('dia', dia_a_eliminar, st.session_state.proyecto_activo)
-                            if ok: st.success(f"✅ {msg}")
-                            else: st.warning(f"⚠️ Borrado localmente, pero: {msg}")
-                            st.rerun()
-                else: st.write("No hay días registrados")
-            else: st.write("No hay filas para eliminar")
-        
-        with col_elim2:
-            if p["filas"]:
-                nombres = sorted(set(f.get('Nombre', '') for f in p["filas"] if f.get('Nombre')))
-                if nombres:
-                    nombre_a_eliminar = st.selectbox("📍 Eliminar por nombre:", [""] + nombres, key="sel_elim_nombre")
-                    if nombre_a_eliminar:
-                        num_filas_nombre = len([f for f in p["filas"] if f.get('Nombre') == nombre_a_eliminar])
-                        if st.button(f"🗑️ Borrar {num_filas_nombre} filas de '{nombre_a_eliminar}'", use_container_width=True):
-                            p["filas"] = [f for f in p["filas"] if f.get('Nombre') != nombre_a_eliminar]
-                            ok, msg = borrar_en_github('ubicacion', nombre_a_eliminar, st.session_state.proyecto_activo)
-                            if ok: st.success(f"✅ {msg}")
-                            else: st.warning(f"⚠️ Borrado localmente, pero: {msg}")
-                            st.rerun()
-                else: st.write("No hay nombres registrados")
-            else: st.write("No hay filas para eliminar")
+        # Si hay proyectos de GitHub cargados, mostrar selector
+        if 'proyectos_github' in st.session_state and st.session_state.proyectos_github:
+            st.markdown("**Selecciona el proyecto de GitHub donde borrar:**")
+            proyecto_gh_seleccionado = st.selectbox(
+                "Proyecto en GitHub:", 
+                st.session_state.proyectos_github,
+                key="sel_proyecto_gh"
+            )
+            
+            st.divider()
+            col_elim1, col_elim2 = st.columns(2)
+            
+            with col_elim1:
+                if p["filas"]:
+                    dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
+                    if dias:
+                        dia_a_eliminar = st.selectbox("📅 Eliminar todo el día:", [""] + dias, key="sel_elim_dia")
+                        if dia_a_eliminar:
+                            num_filas_dia = len([f for f in p["filas"] if f.get('Dia') == dia_a_eliminar])
+                            if st.button(f"🗑️ Borrar {num_filas_dia} filas del día '{dia_a_eliminar}'", use_container_width=True):
+                                # Borrar localmente
+                                p["filas"] = [f for f in p["filas"] if f.get('Dia') != dia_a_eliminar]
+                                # Borrar en GitHub (proyecto seleccionado manualmente)
+                                ok, msg = borrar_en_github_manual('dia', dia_a_eliminar, proyecto_gh_seleccionado)
+                                if ok: st.success(f"✅ {msg}")
+                                else: st.warning(f"️ Borrado localmente, pero: {msg}")
+                                st.rerun()
+                    else: st.write("No hay días registrados")
+                else: st.write("No hay filas para eliminar")
+            
+            with col_elim2:
+                if p["filas"]:
+                    nombres = sorted(set(f.get('Nombre', '') for f in p["filas"] if f.get('Nombre')))
+                    if nombres:
+                        nombre_a_eliminar = st.selectbox("📍 Eliminar por nombre:", [""] + nombres, key="sel_elim_nombre")
+                        if nombre_a_eliminar:
+                            num_filas_nombre = len([f for f in p["filas"] if f.get('Nombre') == nombre_a_eliminar])
+                            if st.button(f"🗑️ Borrar {num_filas_nombre} filas de '{nombre_a_eliminar}'", use_container_width=True):
+                                # Borrar localmente
+                                p["filas"] = [f for f in p["filas"] if f.get('Nombre') != nombre_a_eliminar]
+                                # Borrar en GitHub (proyecto seleccionado manualmente)
+                                ok, msg = borrar_en_github_manual('ubicacion', nombre_a_eliminar, proyecto_gh_seleccionado)
+                                if ok: st.success(f"✅ {msg}")
+                                else: st.warning(f"⚠️ Borrado localmente, pero: {msg}")
+                                st.rerun()
+                    else: st.write("No hay nombres registrados")
+                else: st.write("No hay filas para eliminar")
+        else:
+            st.warning("⚠️ Pulsa el botón '🔄 Cargar proyectos de GitHub' para ver los proyectos disponibles.")
 
         st.divider()
         col_f1, col_f2 = st.columns(2)
         filtro_nombre = col_f1.text_input("🔍 BUSCAR:", placeholder="ALT-CE07")
         dias = sorted(set(f.get('Dia', '') for f in p["filas"] if f.get('Dia')))
-        filtro_dia = col_f2.selectbox(" FILTRAR POR DÍA:", ["TODOS"] + dias)
+        filtro_dia = col_f2.selectbox("📅 FILTRAR POR DÍA:", ["TODOS"] + dias)
         
         filas_vistas = p["filas"]
         if filtro_nombre: filas_vistas = [f for f in filas_vistas if filtro_nombre.upper() in str(f.get('Nombre', '')).upper()]
@@ -439,7 +465,7 @@ with tab3:
                 if filas_bot:
                     st.markdown(f"**{len(filas_bot)} filas disponibles para importar**")
                     modo = st.radio("¿Cómo importar?", ["Añadir a las existentes", "Reemplazar todas"], horizontal=True)
-                    if st.button(" IMPORTAR DATOS", type="primary", use_container_width=True):
+                    if st.button("🚀 IMPORTAR DATOS", type="primary", use_container_width=True):
                         nuevas = []
                         for f in filas_bot:
                             fila = {'Dia': f.get('Dia', ''), 'Nombre': f['Nombre']}
@@ -496,7 +522,7 @@ with tab4:
         config_data = {"proyecto": st.session_state.proyecto_activo, "empresa": p["empresa"], "fecha": p["fecha"], "conceptos": conceptos_validos.to_dict(orient="records")}
         st.download_button("⬇️ DESCARGAR CONFIG (.json)", json.dumps(config_data, indent=2, ensure_ascii=False), f"config_{st.session_state.proyecto_activo.replace(' ', '_')}.json", use_container_width=True)
     with col_b:
-        uploaded = st.file_uploader("⬆️ CARGAR CONFIG (.json)", type=["json"])
+        uploaded = st.file_uploader("️ CARGAR CONFIG (.json)", type=["json"])
         if uploaded:
             try:
                 data = json.load(uploaded); p["empresa"] = data.get("empresa", p["empresa"]); p["fecha"] = data.get("fecha", p["fecha"]); p["conceptos"] = pd.DataFrame(data.get("conceptos", [])); p["filas"] = []
