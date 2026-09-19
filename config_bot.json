@@ -80,5 +80,46 @@
       2.5
     ],
     "num_conceptos": 6
+  },
+  "AVATEL": {
+    "conceptos": [
+      "Preparación extremo cable hasta 24 f.o.",
+      "Preparación extremo cable de 32 f.o.",
+      "Preparación extremo cable de 48 f.o.",
+      "Preparación extremo cable de 64 f.o.",
+      "Preparación extremo cable de 128 f.o.",
+      "Empalme a fusion unitario hasta 8 fo",
+      "Empalme a fusion unitario de 9-48 fo",
+      "Empalme a fusion unitario de 49-128 fo",
+      "Sangrado de cable (sangrado de cubierta)",
+      "Sangrado cable hasta 64FO microcubierta",
+      "Instalación en arqueta o cámara de registro de caja de empalme tipo FIST o similar DIVICAU",
+      "Instalación mural de caja de empalme UCAO, similar o caja operador en fachada o riti",
+      "Instalación mural CTO en fachada o riti",
+      "Inst. o sustituir divisor F.O 1x4, 1x8, 1x16",
+      "Medida reflectométrica 1 fibra en punta",
+      "Medida de potencia 1 fibra en punta",
+      "Manipulación de caja de empalme o CTO existente"
+    ],
+    "precios": [
+      11.36,
+      12.16,
+      12.31,
+      12.92,
+      13.58,
+      6.95,
+      6.4,
+      6.4,
+      24.05,
+      17.72,
+      26.82,
+      8.65,
+      11.02,
+      2.38,
+      3.86,
+      1.89,
+      9.1
+    ],
+    "num_conceptos": 17
   }
 }
