@@ -1,31 +1,75 @@
 {
   "Santomera Mayo 2024": {
-    "empresa": "Fibranet Tecnologia y Sistemas SLU",
-    "fecha": "May-24",
+    "empresa": "DIGIMASTER",
+    "fecha": "DICIEMBRE",
     "conceptos": [
       {
-        "Concepto": "Preparación Extremo de Cable",
-        "Precio": 18.0
+        "Concepto": "Preparación extremo cable hasta 24 f.o.",
+        "Precio": 11.36
       },
       {
-        "Concepto": "Preparación Sangrado",
-        "Precio": 36.0
+        "Concepto": "Preparación extremo cable de 32 f.o.",
+        "Precio": 12.16
       },
       {
-        "Concepto": "Instalación Caja de Empalme, CTO",
-        "Precio": 12.0
+        "Concepto": "Preparación extremo cable de 48 f.o.",
+        "Precio": 12.31
       },
       {
-        "Concepto": "Instalación de Spliter",
-        "Precio": 3.1
+        "Concepto": "Preparación extremo cable de 64 f.o.",
+        "Precio": 12.92
       },
       {
-        "Concepto": "Empalme a Fusión hasta 24fo",
-        "Precio": 7.0
+        "Concepto": "Preparación extremo cable de 128 f.o.",
+        "Precio": 13.58
       },
       {
-        "Concepto": "Medida de potencia de 1 fibra en 2a y 3a ventana",
-        "Precio": 2.5
+        "Concepto": "Empalme a fusion unitario hasta 8 fo",
+        "Precio": 6.95
+      },
+      {
+        "Concepto": "Empalme a fusion unitario de 9-48 fo",
+        "Precio": 6.4
+      },
+      {
+        "Concepto": "Empalme a fusion unitario de 49-128 fo",
+        "Precio": 6.4
+      },
+      {
+        "Concepto": "Sangrado de cable (sangrado de cubierta)",
+        "Precio": 24.05
+      },
+      {
+        "Concepto": "Sangrado cable hasta 64FO microcubierta",
+        "Precio": 17.72
+      },
+      {
+        "Concepto": "Instalación en arqueta o cámara de registro de caja de empalme tipo FIST o similar DIVICAU",
+        "Precio": 26.82
+      },
+      {
+        "Concepto": "Instalación mural de caja de empalme UCAO, similar o caja operador en fachada o riti",
+        "Precio": 8.65
+      },
+      {
+        "Concepto": "Instalación mural CTO en fachada o riti",
+        "Precio": 11.02
+      },
+      {
+        "Concepto": "Inst. o sustituir divisor F.O 1x4, 1x8, 1x16",
+        "Precio": 2.38
+      },
+      {
+        "Concepto": "Medida reflectométrica 1 fibra en punta",
+        "Precio": 3.86
+      },
+      {
+        "Concepto": "Medida de potencia 1 fibra en punta",
+        "Precio": 1.89
+      },
+      {
+        "Concepto": "Manipulación de caja de empalme o CTO existente",
+        "Precio": 9.1
       }
     ],
     "filas": []
@@ -80,5 +124,80 @@
         "Medida de potencia de 1 fibra en 2a y 3a ventana": 0
       }
     ]
+  },
+  "DIGIMASTER": {
+    "empresa": "DIGIMASTER",
+    "fecha": "DICIEMBRE",
+    "conceptos": [
+      {
+        "Concepto": "Preparación extremo cable hasta 24 f.o.",
+        "Precio": 11.36
+      },
+      {
+        "Concepto": "Preparación extremo cable de 32 f.o.",
+        "Precio": 12.16
+      },
+      {
+        "Concepto": "Preparación extremo cable de 48 f.o.",
+        "Precio": 12.31
+      },
+      {
+        "Concepto": "Preparación extremo cable de 64 f.o.",
+        "Precio": 12.92
+      },
+      {
+        "Concepto": "Preparación extremo cable de 128 f.o.",
+        "Precio": 13.58
+      },
+      {
+        "Concepto": "Empalme a fusion unitario hasta 8 fo",
+        "Precio": 6.95
+      },
+      {
+        "Concepto": "Empalme a fusion unitario de 9-48 fo",
+        "Precio": 6.4
+      },
+      {
+        "Concepto": "Empalme a fusion unitario de 49-128 fo",
+        "Precio": 6.4
+      },
+      {
+        "Concepto": "Sangrado de cable (sangrado de cubierta)",
+        "Precio": 24.05
+      },
+      {
+        "Concepto": "Sangrado cable hasta 64FO microcubierta",
+        "Precio": 17.72
+      },
+      {
+        "Concepto": "Instalación en arqueta o cámara de registro de caja de empalme tipo FIST o similar DIVICAU",
+        "Precio": 26.82
+      },
+      {
+        "Concepto": "Instalación mural de caja de empalme UCAO, similar o caja operador en fachada o riti",
+        "Precio": 8.65
+      },
+      {
+        "Concepto": "Instalación mural CTO en fachada o riti",
+        "Precio": 11.02
+      },
+      {
+        "Concepto": "Inst. o sustituir divisor F.O 1x4, 1x8, 1x16",
+        "Precio": 2.38
+      },
+      {
+        "Concepto": "Medida reflectométrica 1 fibra en punta",
+        "Precio": 3.86
+      },
+      {
+        "Concepto": "Medida de potencia 1 fibra en punta",
+        "Precio": 1.89
+      },
+      {
+        "Concepto": "Manipulación de caja de empalme o CTO existente",
+        "Precio": 9.1
+      }
+    ],
+    "filas": []
   }
 }
