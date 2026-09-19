@@ -1,21 +1,6 @@
 {
   "FIBRAMOL": {
-    "filas": [
-      {
-        "Dia": "15",
-        "Nombre": "alt25",
-        "cantidades": [
-          1,
-          2,
-          4,
-          2,
-          4,
-          0,
-          0
-        ],
-        "total": 120.5
-      }
-    ]
+    "filas": []
   },
   "FIBRAMOL SEPTIEMBRE": {
     "filas": [
